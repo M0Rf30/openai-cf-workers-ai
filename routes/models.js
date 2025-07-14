@@ -1,7 +1,7 @@
 import { json } from 'itty-router';
 
 const getModels = async env => {
-	const url = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/models/search?hide_experimental=false&search=Text+Generation`;
+	const url = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/models/search?hide_experimental=false`;
 	const headers = {
 		'Content-Type': 'application/json',
 		'Authorization': `Bearer ${env.CLOUDFLARE_API_TOKEN}`,
