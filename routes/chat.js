@@ -1,5 +1,5 @@
 export const chatHandler = async (request, env) => {
-	let model = '@cf/mistral/mistral-7b-instruct-v0.1';
+	let model = '@cf/meta/llama-4-scout-17b-16e-instruct'; // Default model
 	let messages = [];
 	let error = null;
 
@@ -11,15 +11,94 @@ export const chatHandler = async (request, env) => {
 		// If the POST data is JSON then attach it to our response.
 		if (request.headers.get('Content-Type') === 'application/json') {
 			let json = await request.json();
-			// when there is more than one model available, enable the user to select one
+
+			// Handle model selection - use real Cloudflare model names directly
 			if (json?.model) {
-				const mapper = env.MODEL_MAPPER ?? {};
-				model = mapper[json.model] ? mapper[json.model] : json.model;
+				// List of supported Cloudflare models
+				const supportedModels = [
+					'@cf/qwen/qwen1.5-0.5b-chat',
+					'@cf/baai/bge-m3',
+					'@cf/huggingface/distilbert-sst-2-int8',
+					'@cf/google/gemma-2b-it-lora',
+					'@hf/nexusflow/starling-lm-7b-beta',
+					'@cf/meta/llama-3-8b-instruct',
+					'@cf/meta/llama-3.2-3b-instruct',
+					'@hf/thebloke/llamaguard-7b-awq',
+					'@hf/thebloke/neural-chat-7b-v3-1-awq',
+					'@cf/meta/llama-guard-3-8b',
+					'@cf/meta/llama-2-7b-chat-fp16',
+					'@cf/mistral/mistral-7b-instruct-v0.1',
+					'@cf/mistral/mistral-7b-instruct-v0.2-lora',
+					'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
+					'@hf/mistral/mistral-7b-instruct-v0.2',
+					'@cf/fblgit/una-cybertron-7b-v2-bf16',
+					'@cf/llava-hf/llava-1.5-7b-hf',
+					'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
+					'@cf/thebloke/discolm-german-7b-v1-awq',
+					'@cf/meta/llama-2-7b-chat-int8',
+					'@cf/meta/llama-3.1-8b-instruct-fp8',
+					'@hf/thebloke/mistral-7b-instruct-v0.1-awq',
+					'@cf/qwen/qwen1.5-7b-chat-awq',
+					'@cf/meta/llama-3.2-1b-instruct',
+					'@hf/thebloke/llama-2-13b-chat-awq',
+					'@cf/microsoft/resnet-50',
+					'@hf/thebloke/deepseek-coder-6.7b-base-awq',
+					'@cf/meta-llama/llama-2-7b-chat-hf-lora',
+					'@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+					'@hf/thebloke/openhermes-2.5-mistral-7b-awq',
+					'@cf/meta/m2m100-1.2b',
+					'@hf/thebloke/deepseek-coder-6.7b-instruct-awq',
+					'@cf/baai/bge-small-en-v1.5',
+					'@cf/qwen/qwen2.5-coder-32b-instruct',
+					'@cf/deepseek-ai/deepseek-math-7b-instruct',
+					'@cf/tiiuae/falcon-7b-instruct',
+					'@hf/nousresearch/hermes-2-pro-mistral-7b',
+					'@cf/baai/bge-base-en-v1.5',
+					'@cf/meta/llama-3.1-8b-instruct-awq',
+					'@cf/unum/uform-gen2-qwen-500m',
+					'@hf/thebloke/zephyr-7b-beta-awq',
+					'@cf/google/gemma-7b-it-lora',
+					'@cf/qwen/qwen1.5-1.8b-chat',
+					'@cf/mistralai/mistral-small-3.1-24b-instruct',
+					'@cf/meta/llama-3-8b-instruct-awq',
+					'@cf/meta/llama-3.2-11b-vision-instruct',
+					'@cf/defog/sqlcoder-7b-2',
+					'@cf/microsoft/phi-2',
+					'@hf/meta-llama/meta-llama-3-8b-instruct',
+					'@cf/facebook/bart-large-cnn',
+					'@cf/baai/bge-reranker-base',
+					'@hf/google/gemma-7b-it',
+					'@cf/qwen/qwen1.5-14b-chat-awq',
+					'@cf/openchat/openchat-3.5-0106',
+					'@cf/meta/llama-4-scout-17b-16e-instruct',
+					'@cf/google/gemma-3-12b-it',
+					'@cf/qwen/qwq-32b',
+					'@cf/baai/bge-large-en-v1.5',
+				];
+
+				// Check if the provided model is supported
+				if (supportedModels.includes(json.model)) {
+					model = json.model;
+				} else {
+					throw new Error(
+						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
+					);
+				}
 			}
+
 			if (json?.messages) {
 				if (Array.isArray(json.messages)) {
 					if (json.messages.length === 0) {
-						return Response.json({ error: 'no messages provided' }, { status: 400 });
+						return Response.json(
+							{
+								error: {
+									message: 'no messages provided',
+									type: 'invalid_request_error',
+									code: 'invalid_request',
+								},
+							},
+							{ status: 400 }
+						);
 					}
 					messages = json.messages;
 				}
@@ -53,7 +132,7 @@ export const chatHandler = async (request, env) => {
 								console.log(content);
 								const doneflag = content.trim() == '[DONE]';
 								if (doneflag) {
-									controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+									controller.enqueue(encoder.encode('data: [DONE]\n\n'));
 									return;
 								}
 
@@ -64,7 +143,7 @@ export const chatHandler = async (request, env) => {
 										id: uuid,
 										created,
 										object: 'chat.completion.chunk',
-										model,
+										model: json.model || model, // Return the requested model name
 										choices: [
 											{
 												delta: { content: data.response },
@@ -86,43 +165,64 @@ export const chatHandler = async (request, env) => {
 			// for now, nothing else does anything. Load the ai model.
 			const aiResp = await env.AI.run(model, { stream: json.stream, messages });
 			// Piping the readableStream through the transformStream
-			return json.stream ? new Response(aiResp.pipeThrough(transformer), {
-				headers: {
-					'content-type': 'text/event-stream',
-					'Cache-Control': 'no-cache',
-					'Connection': 'keep-alive',
-				},
-			}) : Response.json({
-				id: uuid,
-				model,
-				created,
-				object: 'chat.completion',
-				choices: [
-					{
-						index: 0,
-						message: {
-							role: 'assistant',
-							content: aiResp.response,
+			return json.stream
+				? new Response(aiResp.pipeThrough(transformer), {
+						headers: {
+							'content-type': 'text/event-stream',
+							'Cache-Control': 'no-cache',
+							'Connection': 'keep-alive',
 						},
-						finish_reason: 'stop',
-					},
-				],
-				usage: {
-					prompt_tokens: 0,
-					completion_tokens: 0,
-					total_tokens: 0,
-				},
-			});
+					})
+				: Response.json({
+						id: uuid,
+						model: json.model || model, // Return the requested model name
+						created,
+						object: 'chat.completion',
+						choices: [
+							{
+								index: 0,
+								message: {
+									role: 'assistant',
+									content: aiResp.response,
+								},
+								finish_reason: 'stop',
+							},
+						],
+						usage: {
+							prompt_tokens: 0,
+							completion_tokens: 0,
+							total_tokens: 0,
+						},
+					});
 		}
 	} catch (e) {
 		error = e;
+		console.error('Chat handler error:', e);
 	}
 
 	// if there is no header or it's not json, return an error
 	if (error) {
-		return Response.json({ error: error.message }, { status: 400 });
+		return Response.json(
+			{
+				error: {
+					message: error.message,
+					type: 'invalid_request_error',
+					code: 'invalid_request',
+				},
+			},
+			{ status: 400 }
+		);
 	}
 
 	// if we get here, return a 400 error
-	return Response.json({ error: 'invalid request' }, { status: 400 });
+	return Response.json(
+		{
+			error: {
+				message: 'Invalid request. Content-Type must be application/json',
+				type: 'invalid_request_error',
+				code: 'invalid_request',
+			},
+		},
+		{ status: 400 }
+	);
 };
