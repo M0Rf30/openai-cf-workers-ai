@@ -100,7 +100,38 @@ export const chatHandler = async (request, env) => {
 					messages = json.messages;
 				}
 			}
+
 			if (!json?.stream) json.stream = false;
+
+			// Handle max_tokens parameter with reasonable defaults and limits
+			let maxTokens = 4096; // Default reasonable limit
+			if (json?.max_tokens) {
+				if (typeof json.max_tokens === 'number' && json.max_tokens > 0) {
+					// Set reasonable bounds: minimum 1, maximum 4096 (adjust based on your needs)
+					maxTokens = Math.max(1, Math.min(json.max_tokens, 4096));
+				}
+			}
+
+			// Handle other generation parameters
+			const temperature =
+				json?.temperature && typeof json.temperature === 'number'
+					? Math.max(0, Math.min(json.temperature, 2)) // Clamp between 0 and 2
+					: 0.7; // Default temperature
+
+			const topP =
+				json?.top_p && typeof json.top_p === 'number'
+					? Math.max(0, Math.min(json.top_p, 1)) // Clamp between 0 and 1
+					: 0.9; // Default top_p
+
+			// Log parameters for debugging
+			console.log('AI Parameters:', {
+				model,
+				maxTokens,
+				temperature,
+				topP,
+				messageCount: messages.length,
+				streaming: json.stream,
+			});
 
 			let buffer = '';
 			const decoder = new TextDecoder();
@@ -118,8 +149,6 @@ export const chatHandler = async (request, env) => {
 
 						// Extract a complete message line
 						const line = buffer.slice(0, newlineIndex + 1);
-						// console.log(line);
-						// console.log("-----------------------------------");
 						buffer = buffer.slice(newlineIndex + 1); // Update buffer
 
 						// Process this line
@@ -159,8 +188,23 @@ export const chatHandler = async (request, env) => {
 				},
 			});
 
-			// for now, nothing else does anything. Load the ai model.
-			const aiResp = await env.AI.run(model, { stream: json.stream, messages });
+			// Prepare AI parameters
+			const aiParams = {
+				stream: json.stream,
+				messages,
+				max_tokens: maxTokens,
+				temperature,
+				top_p: topP,
+			};
+
+			// Run the AI model with configured parameters
+			const aiResp = await env.AI.run(model, aiParams);
+
+			// Log response info for debugging
+			if (!json.stream && aiResp.response) {
+				console.log('AI Response length:', aiResp.response.length);
+			}
+
 			// Piping the readableStream through the transformStream
 			return json.stream
 				? new Response(aiResp.pipeThrough(transformer), {
