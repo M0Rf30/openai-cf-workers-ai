@@ -1,27 +1,28 @@
+// Helper function for streaming models (if needed)
 export async function streamToBuffer(stream) {
-    const chunks = [];
-    const reader = stream.getReader();
+	const reader = stream.getReader();
+	const chunks = [];
 
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
+	try {
+		while (true) {
+			const { done, value } = await reader.read();
+			if (done) break;
+			chunks.push(value);
+		}
+	} finally {
+		reader.releaseLock();
+	}
 
-            if (done) break;
+	// Calculate total length
+	const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
 
-            chunks.push(value);
-        }
+	// Combine all chunks
+	const buffer = new Uint8Array(totalLength);
+	let offset = 0;
+	for (const chunk of chunks) {
+		buffer.set(chunk, offset);
+		offset += chunk.length;
+	}
 
-        // Concatenate all chunks into a single Uint8Array
-        const concatenated = new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0));
-        let offset = 0;
-
-        for (const chunk of chunks) {
-            concatenated.set(chunk, offset);
-            offset += chunk.length;
-        }
-
-        return concatenated;
-    } finally {
-        reader.releaseLock();
-    }
+	return buffer;
 }
