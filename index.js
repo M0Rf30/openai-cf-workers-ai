@@ -4,7 +4,7 @@ import { Router, cors, error, json } from 'itty-router';
 import { chatHandler } from './routes/chat';
 import { completionHandler } from './routes/completion';
 import { embeddingsHandler } from './routes/embeddings';
-import { transcriptionHandler, translationHandler } from './routes/audio';
+import { speechHandler, transcriptionHandler, translationHandler } from './routes/audio';
 import { getImageHandler, imageGenerationHandler } from './routes/image';
 import { modelsHandler } from './routes/models';
 
@@ -40,6 +40,7 @@ router
 	.post('/chat/completions', chatHandler)
 	.post('/completions', completionHandler)
 	.post('/embeddings', embeddingsHandler)
+	.post('/audio/speech', speechHandler)
 	.post('/audio/transcriptions', transcriptionHandler)
 	.post('/audio/translations', translationHandler)
 	.post('/images/generations', imageGenerationHandler)
