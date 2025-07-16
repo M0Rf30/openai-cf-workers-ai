@@ -85,176 +85,205 @@ export const transcriptionHandler = async (request, env) => {
 
 		// Convert audio to required format for Cloudflare Whisper
 		const blob = await file.arrayBuffer();
-		const input = {
-			audio: [...new Uint8Array(blob)],
-		};
 
-		// Note: Cloudflare Whisper doesn't support language parameter directly
-		// It performs automatic language detection
+		// Prepare input based on model type
+		let input;
+		if (modelPath === '@cf/openai/whisper-large-v3-turbo') {
+			// For whisper-large-v3-turbo, use the new format with optional parameters
+			input = {
+				audio: [...new Uint8Array(blob)],
+			};
+
+			// Add optional parameters supported by whisper-large-v3-turbo
+			if (language) {
+				input.language = language;
+			}
+			if (prompt) {
+				input.prompt = prompt;
+			}
+			if (temperature !== undefined && temperature !== 0) {
+				input.temperature = temperature;
+			}
+			// Add timestamp granularities if specified
+			if (timestamp_granularities) {
+				input.timestamp_granularities = [timestamp_granularities];
+			}
+		} else {
+			// For older whisper models, use the simple format
+			input = {
+				audio: [...new Uint8Array(blob)],
+			};
+		}
 
 		const response = await env.AI.run(modelPath, input);
 
-		// Cloudflare Whisper returns: { text, word_count, words, vtt }
-		// Where words is an array of { word, start, end }
+		// Handle different response formats based on model
+		let transcriptionText = '';
+		let words = [];
+		let segments = [];
+
+		if (modelPath === '@cf/openai/whisper-large-v3-turbo') {
+			// whisper-large-v3-turbo returns OpenAI-compatible format
+			transcriptionText = response.text || '';
+
+			// Handle word-level timestamps
+			if (response.words && Array.isArray(response.words)) {
+				words = response.words.map(wordData => ({
+					word: wordData.word,
+					start: wordData.start,
+					end: wordData.end,
+				}));
+			}
+
+			// Handle segment-level timestamps
+			if (response.segments && Array.isArray(response.segments)) {
+				segments = response.segments.map(segmentData => ({
+					id: segmentData.id,
+					start: segmentData.start,
+					end: segmentData.end,
+					text: segmentData.text,
+				}));
+			}
+		} else {
+			// Older whisper models format
+			transcriptionText = response.text || '';
+
+			// Handle legacy format with word_count, words, vtt
+			if (response.words && Array.isArray(response.words)) {
+				words = response.words.map(wordData => ({
+					word: wordData.word,
+					start: wordData.start,
+					end: wordData.end,
+				}));
+			}
+		}
 
 		// Format response based on response_format
 		switch (response_format) {
 			case 'json':
 				// OpenAI compatible response format
 				const jsonResponse = {
-					text: response.text,
+					text: transcriptionText,
 				};
 
 				// Add word-level timestamps if requested and available
-				if (timestamp_granularities === 'word' && response.words) {
-					jsonResponse.words = response.words.map(wordData => ({
-						word: wordData.word,
-						start: wordData.start,
-						end: wordData.end,
-					}));
+				if (timestamp_granularities === 'word' && words.length > 0) {
+					jsonResponse.words = words;
 				}
 
-				// Add segments if available (Cloudflare doesn't provide segments, but we can simulate)
-				if (timestamp_granularities === 'segment' && response.words) {
-					// Create basic segments from words (group by sentences or time chunks)
-					const segments = [];
-					let currentSegment = {
-						id: 0,
-						start: 0,
-						end: 0,
-						text: '',
-					};
+				// Add segments if available or create from words
+				if (timestamp_granularities === 'segment') {
+					if (segments.length > 0) {
+						jsonResponse.segments = segments;
+					} else if (words.length > 0) {
+						// Create basic segments from words (group by sentences or time chunks)
+						const createdSegments = [];
+						let currentSegment = {
+							id: 0,
+							start: words[0].start,
+							end: words[0].end,
+							text: '',
+						};
 
-					response.words.forEach((wordData, index) => {
-						if (index === 0) {
-							currentSegment.start = wordData.start;
-						}
+						words.forEach((wordData, index) => {
+							currentSegment.text += (currentSegment.text ? ' ' : '') + wordData.word;
+							currentSegment.end = wordData.end;
 
-						currentSegment.text += (currentSegment.text ? ' ' : '') + wordData.word;
-						currentSegment.end = wordData.end;
+							// Create new segment on sentence end or every 10 words
+							if (
+								wordData.word.endsWith('.') ||
+								wordData.word.endsWith('!') ||
+								wordData.word.endsWith('?') ||
+								index % 10 === 9 ||
+								index === words.length - 1
+							) {
+								createdSegments.push({ ...currentSegment });
+								if (index < words.length - 1) {
+									currentSegment = {
+										id: createdSegments.length,
+										start: words[index + 1].start,
+										end: words[index + 1].end,
+										text: '',
+									};
+								}
+							}
+						});
 
-						// Create new segment on sentence end or every 10 words
-						if (
-							wordData.word.endsWith('.') ||
-							wordData.word.endsWith('!') ||
-							wordData.word.endsWith('?') ||
-							index % 10 === 9
-						) {
-							segments.push({ ...currentSegment });
-							currentSegment = {
-								id: segments.length,
-								start: wordData.end,
-								end: wordData.end,
-								text: '',
-							};
-						}
-					});
-
-					// Add final segment if it has content
-					if (currentSegment.text) {
-						segments.push(currentSegment);
+						jsonResponse.segments = createdSegments;
 					}
-
-					jsonResponse.segments = segments;
 				}
 
 				return Response.json(jsonResponse);
 
 			case 'text':
-				return new Response(response.text, {
+				return new Response(transcriptionText, {
 					headers: { 'Content-Type': 'text/plain' },
 				});
 
 			case 'srt':
-				// Convert to SRT format using word timings
-				if (response.words && response.words.length > 0) {
+				// Convert to SRT format using word timings or segments
+				const srtSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
+				if (srtSegments.length > 0) {
 					let srtContent = '';
-					let segmentIndex = 1;
-					let currentSegment = '';
-					let segmentStart = response.words[0].start;
-					let segmentEnd = response.words[0].end;
-
-					response.words.forEach((wordData, index) => {
-						currentSegment += (currentSegment ? ' ' : '') + wordData.word;
-						segmentEnd = wordData.end;
-
-						// Create SRT segment every 10 words or at sentence end
-						if (
-							wordData.word.endsWith('.') ||
-							wordData.word.endsWith('!') ||
-							wordData.word.endsWith('?') ||
-							index % 10 === 9 ||
-							index === response.words.length - 1
-						) {
-							const startTime = formatSRTTime(segmentStart);
-							const endTime = formatSRTTime(segmentEnd);
-
-							srtContent += `${segmentIndex}\n${startTime} --> ${endTime}\n${currentSegment}\n\n`;
-
-							segmentIndex++;
-							currentSegment = '';
-							if (index < response.words.length - 1) {
-								segmentStart = response.words[index + 1].start;
-							}
-						}
+					srtSegments.forEach((segment, index) => {
+						const startTime = formatSRTTime(segment.start);
+						const endTime = formatSRTTime(segment.end);
+						srtContent += `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n\n`;
 					});
-
 					return new Response(srtContent, {
 						headers: { 'Content-Type': 'text/plain' },
 					});
 				}
-				return new Response(response.text, {
+				return new Response(transcriptionText, {
 					headers: { 'Content-Type': 'text/plain' },
 				});
 
 			case 'vtt':
-				// Use Cloudflare's VTT output if available, otherwise create from words
+				// Use existing VTT output or create from segments/words
 				if (response.vtt) {
 					return new Response(response.vtt, {
 						headers: { 'Content-Type': 'text/vtt' },
 					});
-				} else if (response.words && response.words.length > 0) {
-					let vttContent = 'WEBVTT\n\n';
-					let segmentIndex = 1;
-					let currentSegment = '';
-					let segmentStart = response.words[0].start;
-					let segmentEnd = response.words[0].end;
-
-					response.words.forEach((wordData, index) => {
-						currentSegment += (currentSegment ? ' ' : '') + wordData.word;
-						segmentEnd = wordData.end;
-
-						// Create VTT segment every 10 words or at sentence end
-						if (
-							wordData.word.endsWith('.') ||
-							wordData.word.endsWith('!') ||
-							wordData.word.endsWith('?') ||
-							index % 10 === 9 ||
-							index === response.words.length - 1
-						) {
-							const startTime = formatVTTTime(segmentStart);
-							const endTime = formatVTTTime(segmentEnd);
-
-							vttContent += `${startTime} --> ${endTime}\n${currentSegment}\n\n`;
-
-							currentSegment = '';
-							if (index < response.words.length - 1) {
-								segmentStart = response.words[index + 1].start;
-							}
-						}
-					});
-
-					return new Response(vttContent, {
-						headers: { 'Content-Type': 'text/vtt' },
-					});
+				} else {
+					const vttSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
+					if (vttSegments.length > 0) {
+						let vttContent = 'WEBVTT\n\n';
+						vttSegments.forEach(segment => {
+							const startTime = formatVTTTime(segment.start);
+							const endTime = formatVTTTime(segment.end);
+							vttContent += `${startTime} --> ${endTime}\n${segment.text}\n\n`;
+						});
+						return new Response(vttContent, {
+							headers: { 'Content-Type': 'text/vtt' },
+						});
+					}
 				}
-				return new Response(response.text, {
+				return new Response(transcriptionText, {
 					headers: { 'Content-Type': 'text/plain' },
 				});
 
+			case 'verbose_json':
+				// Return detailed response with all available information
+				const verboseResponse = {
+					task: 'transcribe',
+					language: response.language || 'en',
+					duration: response.duration || 0,
+					text: transcriptionText,
+				};
+
+				if (words.length > 0) {
+					verboseResponse.words = words;
+				}
+
+				if (segments.length > 0) {
+					verboseResponse.segments = segments;
+				}
+
+				return Response.json(verboseResponse);
+
 			default:
 				return Response.json({
-					text: response.text,
+					text: transcriptionText,
 				});
 		}
 	} catch (error) {
@@ -270,6 +299,45 @@ export const transcriptionHandler = async (request, env) => {
 		);
 	}
 };
+
+// Helper function to create segments from words
+function createSegmentsFromWords(words) {
+	if (!words || words.length === 0) return [];
+
+	const segments = [];
+	let currentSegment = {
+		id: 0,
+		start: words[0].start,
+		end: words[0].end,
+		text: '',
+	};
+
+	words.forEach((wordData, index) => {
+		currentSegment.text += (currentSegment.text ? ' ' : '') + wordData.word;
+		currentSegment.end = wordData.end;
+
+		// Create new segment on sentence end or every 10 words
+		if (
+			wordData.word.endsWith('.') ||
+			wordData.word.endsWith('!') ||
+			wordData.word.endsWith('?') ||
+			index % 10 === 9 ||
+			index === words.length - 1
+		) {
+			segments.push({ ...currentSegment });
+			if (index < words.length - 1) {
+				currentSegment = {
+					id: segments.length,
+					start: words[index + 1].start,
+					end: words[index + 1].end,
+					text: '',
+				};
+			}
+		}
+	});
+
+	return segments;
+}
 
 // OpenAI-compatible translation handler
 // POST /audio/translations
@@ -314,9 +382,24 @@ export const translationHandler = async (request, env) => {
 
 		// Step 1: Transcribe audio using Cloudflare Whisper
 		const blob = await file.arrayBuffer();
-		const transcriptionInput = {
-			audio: [...new Uint8Array(blob)],
-		};
+
+		// Prepare input based on model type
+		let transcriptionInput;
+		if (sttModelPath === '@cf/openai/whisper-large-v3-turbo') {
+			transcriptionInput = {
+				audio: [...new Uint8Array(blob)],
+			};
+			if (prompt) {
+				transcriptionInput.prompt = prompt;
+			}
+			if (temperature !== undefined && temperature !== 0) {
+				transcriptionInput.temperature = temperature;
+			}
+		} else {
+			transcriptionInput = {
+				audio: [...new Uint8Array(blob)],
+			};
+		}
 
 		const transcriptionResponse = await env.AI.run(sttModelPath, transcriptionInput);
 
