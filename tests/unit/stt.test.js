@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { transcriptionHandler } from '../routes/audio';
+import { transcriptionHandler } from '../../routes/audio.js';
 
 describe('STT Transcription Handler', () => {
   it('should transcribe audio correctly', async () => {
@@ -23,7 +23,7 @@ describe('STT Transcription Handler', () => {
         run: vi.fn((model, input) => {
           // Assert that the correct model is used and input is FormData
           expect(model).toBeTypeOf('string');
-          expect(input).toEqual({ audio: expect.any(Blob) });
+          expect(input).toEqual({ audio: expect.any(Array) });
           // Return a mock response from Cloudflare AI
           return Promise.resolve({ text: 'Hello, this is a test of text to speech functionality.' });
         }),

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { embeddingsHandler } from '../../routes/embeddings';
+import { embeddingsHandler } from '../../routes/embeddings.js';
 
 const createMockEnv = () => ({
 	AI: {

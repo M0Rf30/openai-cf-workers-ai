@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { transcriptionHandler, translationHandler, speechHandler } from '../../routes/audio';
+import { transcriptionHandler, translationHandler, speechHandler } from '../../routes/audio.js';
 
 // Mock environment
 const createMockEnv = () => ({
@@ -142,6 +142,7 @@ describe('Audio Routes', () => {
 
 			mockEnv.AI.run.mockResolvedValue({
 				text: 'Hello, world!',
+				duration: 2.5,
 				transcription_info: {
 					language: 'en',
 					duration: 2.5,

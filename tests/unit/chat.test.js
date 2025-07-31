@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { chatHandler } from '../../routes/chat';
+import { chatHandler } from '../../routes/chat.js';
 
 const createMockEnv = () => ({
 	AI: {
@@ -50,6 +50,16 @@ describe('Chat Handler', () => {
 			],
 			stream: true,
 		});
+
+		const mockStream = new ReadableStream({
+			start(controller) {
+				controller.enqueue('data: {"response": "Hello!"}\n\n');
+				controller.enqueue('data: [DONE]\n\n');
+				controller.close();
+			},
+		});
+
+		mockEnv.AI.run.mockResolvedValue(mockStream);
 
 		const response = await chatHandler(mockRequest, mockEnv);
 

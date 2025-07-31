@@ -301,15 +301,9 @@ export const transcriptionHandler = async (request, env) => {
 					language: response.language || 'en',
 					duration: response.duration || 0,
 					text: transcriptionText,
+					words: words,
+					segments: segments,
 				};
-
-				if (words.length > 0) {
-					verboseResponse.words = words;
-				}
-
-				if (segments.length > 0) {
-					verboseResponse.segments = segments;
-				}
 
 				return Response.json(verboseResponse);
 

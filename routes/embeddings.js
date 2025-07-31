@@ -1,4 +1,8 @@
 export const embeddingsHandler = async (request, env) => {
+	const MODEL_MAPPING = {
+		'text-embedding-ada-002': '@cf/baai/bge-base-en-v1.5',
+	};
+
 	// Supported Cloudflare models
 	const SUPPORTED_MODELS = [
 		'@cf/baai/bge-base-en-v1.5',
@@ -20,23 +24,25 @@ export const embeddingsHandler = async (request, env) => {
 	try {
 		// Check for proper content type
 		if (request.headers.get('Content-Type') !== 'application/json') {
-			return Response.json({ error: 'Content-Type must be application/json' }, { status: 400 });
+			return Response.json({ error: 'Content-Type must be application/json', usage: { prompt_tokens: 0, total_tokens: 0 } }, { status: 400 });
 		}
 
 		const json = await request.json();
 
 		// Validate required fields
 		if (!json.input) {
-			return Response.json({ error: 'Missing required field: input' }, { status: 400 });
+			return Response.json({ error: 'Missing required field: input', usage: { prompt_tokens: 0, total_tokens: 0 } }, { status: 400 });
 		}
 
 		// Handle model selection
-		if (json.model && SUPPORTED_MODELS.includes(json.model)) {
-			model = json.model;
+		let cfModel = MODEL_MAPPING[json.model] || json.model;
+		if (cfModel && SUPPORTED_MODELS.includes(cfModel)) {
+			model = cfModel;
 		} else if (json.model && !SUPPORTED_MODELS.includes(json.model)) {
 			return Response.json(
 				{
 					error: `Model "${json.model}" not supported. Available models: ${SUPPORTED_MODELS.join(', ')}`,
+					usage: { prompt_tokens: 0, total_tokens: 0 }
 				},
 				{ status: 400 }
 			);
@@ -56,26 +62,26 @@ export const embeddingsHandler = async (request, env) => {
 			inputText = [inputText];
 		} else if (!Array.isArray(inputText)) {
 			return Response.json(
-				{ error: 'Input must be a string or array of strings' },
+				{ error: 'Input must be a string or array of strings', usage: { prompt_tokens: 0, total_tokens: 0 } },
 				{ status: 400 }
 			);
 		}
 
 		// Validate input length
 		if (inputText.length === 0) {
-			return Response.json({ error: 'Input cannot be empty' }, { status: 400 });
+			return Response.json({ error: 'Input cannot be empty', usage: { prompt_tokens: 0, total_tokens: 0 } }, { status: 400 });
 		}
 
 		// Check for batch size limits (Cloudflare supports up to 100 items)
 		if (inputText.length > 100) {
-			return Response.json({ error: 'Batch size cannot exceed 100 items' }, { status: 400 });
+			return Response.json({ error: 'Batch size cannot exceed 100 items', usage: { prompt_tokens: 0, total_tokens: 0 } }, { status: 400 });
 		}
 
 		// Validate each text item
 		for (const text of inputText) {
 			if (typeof text !== 'string' || text.trim().length === 0) {
 				return Response.json(
-					{ error: 'All input items must be non-empty strings' },
+					{ error: 'All input items must be non-empty strings', usage: { prompt_tokens: 0, total_tokens: 0 } },
 					{ status: 400 }
 				);
 			}
@@ -122,7 +128,7 @@ export const embeddingsHandler = async (request, env) => {
 			return Response.json({ error: 'Invalid input format or content' }, { status: 400 });
 		}
 
-		return Response.json({ error: error?.message || 'Internal server error' }, { status: 500 });
+		return Response.json({ error: error?.message || 'Internal server error', usage: { prompt_tokens: 0, total_tokens: 0 } }, { status: 500 });
 	}
 };
 
