@@ -1,15 +1,19 @@
-name = "openai-cf"                # todo
+name = "ai"                # todo
 main = "index.js"
 compatibility_date = "2024-05-06"
 
 [ai]
 binding = "AI" # i.e. available in your Worker on env.AI
 
-[[r2_buckets]]
-binding = "IMAGE_BUCKET"
-bucket_name = "openai-cf-images"
-preview_bucket_name = "ai-images"
+#[[r2_buckets]]
+#binding = "IMAGE_BUCKET"
+#bucket_name = "openai-cf-images"
+#preview_bucket_name = "ai-images"
 
 [vars]
-CLOUDFLARE_ACCOUNT_ID = "c8c30db3dddc4ad31065d336368c7905" # replace with your own.
+CLOUDFLARE_ACCOUNT_ID = "a7f2833c20d5fc9b6efd420b2911ab22" # replace with your own.
 # MODEL_MAPPER = { "gpt-3.5-turbo" = "@cf/meta/llama-2-7b-chat-int8" } # Optional
+
+[observability]
+enabled = true
+head_sampling_rate = 1

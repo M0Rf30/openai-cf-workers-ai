@@ -9,6 +9,18 @@ const AVAILABLE_MODELS = {
 	language_detection: ['@cf/meta/llama-2-7b-chat-int8'],
 };
 
+// OpenAI-compatible model name mappings
+const MODEL_MAPPING = {
+	// STT models
+	'whisper-1': '@cf/openai/whisper',
+	'whisper': '@cf/openai/whisper',
+	'whisper-tiny-en': '@cf/openai/whisper-tiny-en',
+	'whisper-large-v3-turbo': '@cf/openai/whisper-large-v3-turbo',
+	// TTS models
+	'tts-1': '@cf/myshell-ai/melotts',
+	'tts-1-hd': '@cf/myshell-ai/melotts',
+};
+
 // OpenAI-compatible voices for TTS (mapped to language codes for MeloTTS)
 const VOICE_MAPPING = {
 	alloy: 'it',
@@ -18,14 +30,34 @@ const VOICE_MAPPING = {
 
 const VOICES = Object.keys(VOICE_MAPPING);
 
-// Utility function to validate model
+// Utility function to validate model and convert to Cloudflare format
 function validateModel(type, modelName) {
-	if (!AVAILABLE_MODELS[type] || !AVAILABLE_MODELS[type].includes(modelName)) {
+	// First try to map OpenAI model names to Cloudflare paths
+	let cloudflareModel = MODEL_MAPPING[modelName] || modelName;
+
+	if (!AVAILABLE_MODELS[type] || !AVAILABLE_MODELS[type].includes(cloudflareModel)) {
+		// Get available OpenAI-compatible model names for error message
+		const availableOpenAINames = Object.keys(MODEL_MAPPING).filter(key => {
+			const cfModel = MODEL_MAPPING[key];
+			return AVAILABLE_MODELS[type]?.includes(cfModel);
+		});
+		const allAvailable = [...availableOpenAINames, ...AVAILABLE_MODELS[type]];
+
 		throw new Error(
-			`Invalid ${type} model: ${modelName}. Available models: ${AVAILABLE_MODELS[type]?.join(', ')}`
+			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`
 		);
 	}
-	return modelName;
+	return cloudflareModel;
+}
+
+// Utility function to convert ArrayBuffer to base64 string
+function arrayBufferToBase64(buffer) {
+	const bytes = new Uint8Array(buffer);
+	let binary = '';
+	for (let i = 0; i < bytes.byteLength; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
 }
 
 // Utility function to extract language ID from LLM response
@@ -61,7 +93,7 @@ export const transcriptionHandler = async (request, env) => {
 
 		// OpenAI-compatible parameters
 		const file = formData.get('file');
-		const model = formData.get('model') || '@cf/openai/whisper';
+		const model = formData.get('model') || 'whisper-1';
 		const prompt = formData.get('prompt'); // Optional context
 		const response_format = formData.get('response_format') || 'json';
 		const temperature = formData.get('temperature') ? parseFloat(formData.get('temperature')) : 0;
@@ -89,9 +121,9 @@ export const transcriptionHandler = async (request, env) => {
 		// Prepare input based on model type
 		let input;
 		if (modelPath === '@cf/openai/whisper-large-v3-turbo') {
-			// For whisper-large-v3-turbo, use the new format with optional parameters
+			// For whisper-large-v3-turbo, use base64 format
 			input = {
-				audio: [...new Uint8Array(blob)],
+				audio: arrayBufferToBase64(blob),
 			};
 
 			// Add optional parameters supported by whisper-large-v3-turbo
@@ -109,7 +141,7 @@ export const transcriptionHandler = async (request, env) => {
 				input.timestamp_granularities = [timestamp_granularities];
 			}
 		} else {
-			// For older whisper models, use the simple format
+			// For older whisper models, use array format
 			input = {
 				audio: [...new Uint8Array(blob)],
 			};
@@ -359,7 +391,7 @@ export const translationHandler = async (request, env) => {
 
 		// OpenAI-compatible parameters
 		const file = formData.get('file');
-		const model = formData.get('model') || '@cf/openai/whisper';
+		const model = formData.get('model') || 'whisper-1';
 		const prompt = formData.get('prompt'); // Optional context
 		const response_format = formData.get('response_format') || 'json';
 		const temperature = formData.get('temperature') ? parseFloat(formData.get('temperature')) : 0;
@@ -387,7 +419,7 @@ export const translationHandler = async (request, env) => {
 		let transcriptionInput;
 		if (sttModelPath === '@cf/openai/whisper-large-v3-turbo') {
 			transcriptionInput = {
-				audio: [...new Uint8Array(blob)],
+				audio: arrayBufferToBase64(blob),
 			};
 			if (prompt) {
 				transcriptionInput.prompt = prompt;
@@ -482,13 +514,7 @@ export const speechHandler = async (request, env) => {
 		const body = await request.json();
 
 		// OpenAI-compatible parameters
-		const {
-			model = '@cf/myshell-ai/melotts',
-			input,
-			voice = 'alloy',
-			response_format = 'mp3',
-			speed = 1.0,
-		} = body;
+		const { model = 'tts-1', input, voice = 'alloy', response_format = 'mp3', speed = 1.0 } = body;
 
 		if (!input) {
 			return Response.json(

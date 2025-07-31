@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI → Cloudflare Workers AI | Uncovered Routes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #7c3aed;
+            --primary-dark: #6d28d9;
+            --secondary: #f97316;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --light: #f8fafc;
+            --gray: #64748b;
+            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            background: linear-gradient(45deg, #0f172a 0%, #1e293b 100%);
+            overflow: hidden;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: -50%;
+            background: radial-gradient(circle, rgba(124, 58, 237, 0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            to { transform: rotate(360deg); }
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.03;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            border-radius: 50%;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            background: var(--secondary);
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            top: 60%;
+            right: 10%;
+            animation-delay: 5s;
+        }
+
+        .shape:nth-child(3) {
+            width: 250px;
+            height: 250px;
+            background: var(--info);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+            bottom: 20%;
+            left: 30%;
+            animation-delay: 10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(120deg); }
+            66% { transform: translate(-20px, 20px) rotate(240deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #7c3aed 0%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            font-weight: 300;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient);
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(124, 58, 237, 0.4);
+            box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+        }
+
+        .stat-card:hover::before {
+            transform: translateX(0);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .routes-section {
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #f1f5f9;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .badge-implemented {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-unimplemented {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .badge-partial {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .routes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .route-card {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .route-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, transparent 0%, rgba(124, 58, 237, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .route-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(124, 58, 237, 0.3);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .route-card:hover::after {
+            opacity: 1;
+        }
+
+        .route-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .route-method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .method-post {
+            background: rgba(59, 130, 246, 0.2);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .method-get {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .method-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .route-status {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-implemented {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status-unimplemented {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .status-partial {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .route-path {
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            color: #e2e8f0;
+            margin-bottom: 0.5rem;
+            word-break: break-all;
+            position: relative;
+            z-index: 1;
+        }
+
+        .route-description {
+            font-size: 0.875rem;
+            color: #94a3b8;
+            line-height: 1.5;
+            position: relative;
+            z-index: 1;
+        }
+
+        .note-section {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 3rem;
+            text-align: center;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .note-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .note-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+
+        .note-text {
+            color: #94a3b8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .routes-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>OpenAI → Cloudflare Workers AI</h1>
+            <p class="subtitle">API Route Implementation Status</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">9</div>
+                <div class="stat-label">Implemented Routes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">15</div>
+                <div class="stat-label">Unimplemented Routes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">37.5%</div>
+                <div class="stat-label">Coverage</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">6</div>
+                <div class="stat-label">API Categories</div>
+            </div>
+        </div>
+
+        <div class="routes-section">
+            <div class="section-header">
+                <h2 class="section-title">✅ Implemented Routes</h2>
+                <span class="badge badge-implemented">9 routes</span>
+            </div>
+            <div class="routes-grid">
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/chat/completions</div>
+                    <div class="route-description">Create chat completions with various LLM models</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/completions</div>
+                    <div class="route-description">Generate text completions</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/embeddings</div>
+                    <div class="route-description">Create embeddings from text input</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/audio/transcriptions</div>
+                    <div class="route-description">Transcribe audio to text using Whisper</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/audio/translations</div>
+                    <div class="route-description">Translate audio to English</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/audio/speech</div>
+                    <div class="route-description">Text-to-speech (awaiting CF AI models)</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/images/generations</div>
+                    <div class="route-description">Generate images from text prompts</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-get">GET</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/images/get/:name</div>
+                    <div class="route-description">Retrieve generated images</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-get">GET</span>
+                        <span class="route-status status-implemented">✓ Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/models</div>
+                    <div class="route-description">List available AI models</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="routes-section">
+            <div class="section-header">
+                <h2 class="section-title">❌ Unimplemented Routes</h2>
+                <span class="badge badge-unimplemented">15 routes</span>
+            </div>
+            <div class="routes-grid">
+                <!-- Files API -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/files</div>
+                    <div class="route-description">Upload files for assistants, fine-tuning, etc.</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-get">GET</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/files</div>
+                    <div class="route-description">List uploaded files</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-delete">DELETE</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/files/{file_id}</div>
+                    <div class="route-description">Delete a file</div>
+                </div>
+
+                <!-- Assistants API -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/assistants</div>
+                    <div class="route-description">Create an assistant with instructions and tools</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/threads</div>
+                    <div class="route-description">Create a conversation thread</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/threads/{thread_id}/messages</div>
+                    <div class="route-description">Add messages to a thread</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/threads/{thread_id}/runs</div>
+                    <div class="route-description">Run an assistant on a thread</div>
+                </div>
+
+                <!-- Fine-tuning API -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/fine_tuning/jobs</div>
+                    <div class="route-description">Create a fine-tuning job</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-get">GET</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/fine_tuning/jobs</div>
+                    <div class="route-description">List fine-tuning jobs</div>
+                </div>
+
+                <!-- Images API (Additional) -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/images/edits</div>
+                    <div class="route-description">Edit images using AI</div>
+                </div>
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/images/variations</div>
+                    <div class="route-description">Create image variations</div>
+                </div>
+
+                <!-- Moderation API -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/moderations</div>
+                    <div class="route-description">Check if text violates content policy</div>
+                </div>
+
+                <!-- Batch API -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/batches</div>
+                    <div class="route-description">Create batch API requests</div>
+                </div>
+
+                <!-- Vector Stores -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-post">POST</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/vector_stores</div>
+                    <div class="route-description">Create vector stores for retrieval</div>
+                </div>
+
+                <!-- Usage API -->
+                <div class="route-card">
+                    <div class="route-header">
+                        <span class="route-method method-get">GET</span>
+                        <span class="route-status status-unimplemented">✗ Not Implemented</span>
+                    </div>
+                    <div class="route-path">/v1/usage</div>
+                    <div class="route-description">Get API usage statistics</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="note-section">
+            <div class="note-icon">🚀</div>
+            <h3 class="note-title">Contributing</h3>
+            <p class="note-text">
+                This project maps OpenAI's API to Cloudflare Workers AI. Some routes are awaiting 
+                compatible models or features from Cloudflare. Contributions are welcome to implement 
+                additional endpoints as new capabilities become available!
+            </p>
+        </div>
+    </div>
+</body>
+</html>
