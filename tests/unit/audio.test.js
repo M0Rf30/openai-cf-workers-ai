@@ -25,13 +25,14 @@ const createMockFormData = (data = {}) => {
 	Object.entries(data).forEach(([key, value]) => {
 		formData.set(key, value);
 	});
-	formData.get = (key) => formData.get(key);
 	return formData;
 };
 
 // Mock Request helper
 const createMockRequest = (headers = {}, formData = null, json = null) => ({
-	headers: new Map(Object.entries(headers)),
+	headers: {
+		get: (key) => headers[key] || null,
+	},
 	formData: formData ? () => Promise.resolve(formData) : null,
 	json: json ? () => Promise.resolve(json) : null,
 	method: 'POST',

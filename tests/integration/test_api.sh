@@ -266,6 +266,10 @@ run_test "Chat with system message" \
     200 \
     validate_chat_response
 
+run_test "Chat streaming" \
+    "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Count to 3\"}],\"stream\":true}'" \
+    200
+
 run_test "Chat without messages (should fail)" \
     "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-3.5-turbo\"}'" \
     400 \
@@ -317,6 +321,184 @@ run_test "Invalid endpoint (should fail)" \
 run_test "Invalid JSON payload (should fail)" \
     "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d 'invalid-json'" \
     400
+
+echo
+
+# =============================================================================
+# VISION TESTS
+# =============================================================================
+
+log_info "=== VISION TESTS ==="
+
+run_test "Vision chat with image" \
+    "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-4-vision-preview\",\"messages\":[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"What is in this image?\"},{\"type\":\"image_url\",\"image_url\":{\"url\":\"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg\"}}]}]}'" \
+    200 \
+    validate_chat_response
+
+run_test "Image analysis" \
+    "curl -X POST '$WORKER_URL/images/analyze' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"image_url\":\"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg\",\"task\":\"describe\"}'" \
+    200 \
+    validate_json_response
+
+run_test "Image classification" \
+    "curl -X POST '$WORKER_URL/images/classify' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"image_url\":\"https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg\"}'" \
+    200 \
+    validate_json_response
+
+echo
+
+# =============================================================================
+# MODERATION TESTS
+# =============================================================================
+
+log_info "=== MODERATION TESTS ==="
+
+run_test "Text moderation - safe content" \
+    "curl -X POST '$WORKER_URL/moderations' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"input\":\"Hello, how are you today?\"}'" \
+    200 \
+    validate_json_response
+
+run_test "Text moderation - batch content" \
+    "curl -X POST '$WORKER_URL/moderations' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"input\":[\"Hello world\",\"Nice weather today\"]}'" \
+    200 \
+    validate_json_response
+
+run_test "Moderation without input (should fail)" \
+    "curl -X POST '$WORKER_URL/moderations' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"text-moderation-latest\"}'" \
+    400 \
+    validate_error_response
+
+echo
+
+# =============================================================================
+# FINE-TUNING TESTS
+# =============================================================================
+
+log_info "=== FINE-TUNING TESTS ==="
+
+run_test "List fine-tuning jobs" \
+    "curl -X GET '$WORKER_URL/fine_tuning/jobs' -H 'Authorization: Bearer $AUTH_TOKEN'" \
+    200 \
+    validate_json_response
+
+run_test "Create fine-tuning job" \
+    "curl -X POST '$WORKER_URL/fine_tuning/jobs' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-3.5-turbo\",\"training_file\":\"file-abc123\"}'" \
+    200 \
+    validate_json_response
+
+run_test "Get fine-tuning job" \
+    "curl -X GET '$WORKER_URL/fine_tuning/jobs/ftjob-test123' -H 'Authorization: Bearer $AUTH_TOKEN'" \
+    200 \
+    validate_json_response
+
+run_test "Cancel fine-tuning job" \
+    "curl -X POST '$WORKER_URL/fine_tuning/jobs/ftjob-test123/cancel' -H 'Authorization: Bearer $AUTH_TOKEN'" \
+    200 \
+    validate_json_response
+
+run_test "List fine-tuning events" \
+    "curl -X GET '$WORKER_URL/fine_tuning/jobs/ftjob-test123/events' -H 'Authorization: Bearer $AUTH_TOKEN'" \
+    200 \
+    validate_json_response
+
+echo
+
+# =============================================================================
+# ASSISTANTS API TESTS
+# =============================================================================
+
+log_info "=== ASSISTANTS API TESTS ==="
+
+run_test "Create assistant" \
+    "curl -X POST '$WORKER_URL/assistants' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-3.5-turbo\",\"name\":\"Test Assistant\",\"instructions\":\"You are a helpful assistant.\"}'" \
+    200 \
+    validate_json_response
+
+run_test "List assistants" \
+    "curl -X GET '$WORKER_URL/assistants' -H 'Authorization: Bearer $AUTH_TOKEN'" \
+    200 \
+    validate_json_response
+
+run_test "Create thread" \
+    "curl -X POST '$WORKER_URL/threads' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{}'" \
+    200 \
+    validate_json_response
+
+run_test "Create message in thread" \
+    "curl -X POST '$WORKER_URL/threads/thread_test123/messages' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"role\":\"user\",\"content\":\"Hello!\"}'" \
+    200 \
+    validate_json_response
+
+run_test "List messages in thread" \
+    "curl -X GET '$WORKER_URL/threads/thread_test123/messages' -H 'Authorization: Bearer $AUTH_TOKEN'" \
+    200 \
+    validate_json_response
+
+echo
+
+# =============================================================================
+# ADVANCED FEATURE TESTS
+# =============================================================================
+
+log_info "=== ADVANCED FEATURE TESTS ==="
+
+run_test "Chat with temperature parameter" \
+    "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}],\"temperature\":0.9}'" \
+    200 \
+    validate_chat_response
+
+run_test "Chat with max_tokens parameter" \
+    "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"gpt-3.5-turbo\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}],\"max_tokens\":50}'" \
+    200 \
+    validate_chat_response
+
+run_test "Embeddings with different model" \
+    "curl -X POST '$WORKER_URL/embeddings' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"input\":\"Test embedding\",\"model\":\"text-embedding-3-small\"}'" \
+    200 \
+    validate_embedding_response
+
+run_test "TTS with different voice" \
+    "curl -X POST '$WORKER_URL/audio/speech' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"tts-1\",\"input\":\"Testing different voices\",\"voice\":\"echo\"}'" \
+    200
+
+echo
+
+# =============================================================================
+# MODEL COMPATIBILITY TESTS  
+# =============================================================================
+
+log_info "=== MODEL COMPATIBILITY TESTS ==="
+
+# Test OpenAI model name mappings
+OPENAI_MODELS=("gpt-4o" "gpt-4o-mini" "gpt-4-turbo" "gpt-3.5-turbo" "text-embedding-ada-002" "whisper-1" "tts-1" "dall-e-3")
+
+for model in "${OPENAI_MODELS[@]}"; do
+    case $model in 
+        gpt-4o|gpt-4o-mini|gpt-4-turbo|gpt-3.5-turbo)
+            run_test "Chat with OpenAI model: $model" \
+                "curl -X POST '$WORKER_URL/chat/completions' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"$model\",\"messages\":[{\"role\":\"user\",\"content\":\"Hi\"}]}'" \
+                200 \
+                validate_chat_response
+            ;;
+        text-embedding-ada-002)
+            run_test "Embeddings with OpenAI model: $model" \
+                "curl -X POST '$WORKER_URL/embeddings' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"input\":\"Test\",\"model\":\"$model\"}'" \
+                200 \
+                validate_embedding_response
+            ;;
+        whisper-1)
+            run_test "Transcription with OpenAI model: $model" \
+                "curl -X POST '$WORKER_URL/audio/transcriptions' -H 'Authorization: Bearer $AUTH_TOKEN' -F 'file=@$AUDIO_FILE' -F 'model=$model'" \
+                200 \
+                validate_transcription_response
+            ;;
+        tts-1)
+            run_test "TTS with OpenAI model: $model" \
+                "curl -X POST '$WORKER_URL/audio/speech' -H 'Authorization: Bearer $AUTH_TOKEN' -H 'Content-Type: application/json' -d '{\"model\":\"$model\",\"input\":\"Test\",\"voice\":\"alloy\"}'" \
+                200
+            ;;
+    esac
+done
 
 echo
 

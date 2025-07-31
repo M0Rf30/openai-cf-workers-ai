@@ -11,51 +11,127 @@ import {
 	validateAudioFile,
 } from './errors.js';
 
-// Model validation and mapping
+// Model validation and mapping - Updated with latest Cloudflare Workers AI models
 export const AVAILABLE_MODELS = {
 	chat: [
 		'@cf/meta/llama-2-7b-chat-int8',
-		'@cf/meta/llama-2-7b-chat-fp16',
+		'@cf/meta/llama-2-7b-chat-fp16', 
+		'@cf/meta/llama-3-8b-instruct',
+		'@cf/meta/llama-3.1-8b-instruct-fp8',
+		'@cf/meta/llama-3.1-8b-instruct-awq',
+		'@cf/meta/llama-3.2-1b-instruct',
+		'@cf/meta/llama-3.2-3b-instruct',
+		'@cf/meta/llama-3.2-11b-vision-instruct',
+		'@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+		'@cf/meta/llama-4-scout-17b-16e-instruct',
 		'@cf/mistral/mistral-7b-instruct-v0.1',
-		'@cf/microsoft/DialoGPT-medium',
+		'@cf/mistral/mistral-7b-instruct-v0.2-lora',
+		'@cf/mistralai/mistral-small-3.1-24b-instruct',
+		'@cf/qwen/qwen1.5-0.5b-chat',
+		'@cf/qwen/qwen1.5-1.8b-chat',
+		'@cf/qwen/qwen1.5-7b-chat-awq',
+		'@cf/qwen/qwen1.5-14b-chat-awq',
+		'@cf/qwen/qwen2.5-coder-32b-instruct',
+		'@cf/qwen/qwq-32b',
+		'@cf/google/gemma-2b-it-lora',
+		'@cf/google/gemma-7b-it-lora',
+		'@cf/google/gemma-3-12b-it',
+		'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
+		'@cf/openchat/openchat-3.5-0106',
+		'@cf/tiiuae/falcon-7b-instruct',
+		'@cf/deepseek-ai/deepseek-math-7b-instruct',
+		'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
+		'@hf/nexusflow/starling-lm-7b-beta',
+		'@hf/thebloke/neural-chat-7b-v3-1-awq',
+		'@hf/thebloke/mistral-7b-instruct-v0.1-awq',
+		'@hf/thebloke/llama-2-13b-chat-awq',
+		'@hf/thebloke/openhermes-2.5-mistral-7b-awq',
+		'@hf/thebloke/zephyr-7b-beta-awq',
+		'@hf/mistral/mistral-7b-instruct-v0.2',
+		'@hf/nousresearch/hermes-2-pro-mistral-7b',
+		'@hf/meta-llama/meta-llama-3-8b-instruct',
+		'@hf/google/gemma-7b-it',
 	],
 	completion: [
 		'@cf/meta/llama-2-7b-chat-int8',
-		'@cf/meta/llama-2-7b-chat-fp16',
+		'@cf/meta/llama-3-8b-instruct',
 		'@cf/mistral/mistral-7b-instruct-v0.1',
+		'@cf/qwen/qwen1.5-7b-chat-awq',
+		'@hf/thebloke/deepseek-coder-6.7b-base-awq',
+		'@hf/thebloke/deepseek-coder-6.7b-instruct-awq',
+		'@cf/defog/sqlcoder-7b-2',
+		'@cf/microsoft/phi-2',
 	],
 	embedding: [
 		'@cf/baai/bge-base-en-v1.5',
 		'@cf/baai/bge-small-en-v1.5',
 		'@cf/baai/bge-large-en-v1.5',
+		'@cf/baai/bge-reranker-base',
+	],
+	vision: [
+		'@cf/meta/llama-3.2-11b-vision-instruct',
+		'@cf/llava-hf/llava-1.5-7b-hf',
+		'@cf/unum/uform-gen2-qwen-500m',
+	],
+	image_generation: [
+		'@cf/stabilityai/stable-diffusion-xl-base-1.0',
+		'@cf/runwayml/stable-diffusion-v1-5-inpainting',
+		'@cf/runwayml/stable-diffusion-v1-5-img2img',
+		'@cf/bytedance/stable-diffusion-xl-lightning',
+	],
+	image_classification: [
+		'@cf/microsoft/resnet-50',
+		'@cf/huggingface/distilbert-sst-2-int8',
 	],
 	stt: [
 		'@cf/openai/whisper',
-		'@cf/openai/whisper-tiny-en',
+		'@cf/openai/whisper-tiny-en', 
 		'@cf/openai/whisper-large-v3-turbo',
 	],
 	tts: ['@cf/myshell-ai/melotts'],
 	translation: ['@cf/meta/m2m100-1.2b'],
+	text_classification: [
+		'@cf/huggingface/distilbert-sst-2-int8',
+		'@cf/facebook/bart-large-cnn',
+	],
+	summarization: [
+		'@cf/facebook/bart-large-cnn',
+	],
 	language_detection: ['@cf/meta/llama-2-7b-chat-int8'],
+	moderation: [
+		'@cf/meta/llama-guard-3-8b',
+		'@hf/thebloke/llamaguard-7b-awq',
+	],
 };
 
 // OpenAI-compatible model name mappings
 export const MODEL_MAPPING = {
-	// Chat models
-	'gpt-3.5-turbo': '@cf/meta/llama-2-7b-chat-int8',
-	'gpt-3.5-turbo-16k': '@cf/meta/llama-2-7b-chat-fp16',
-	'gpt-4': '@cf/mistral/mistral-7b-instruct-v0.1',
-	'gpt-4-turbo': '@cf/mistral/mistral-7b-instruct-v0.1',
+	// Chat models - Premium models mapped to best Cloudflare equivalents
+	'gpt-4o': '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+	'gpt-4o-mini': '@cf/meta/llama-3.2-3b-instruct',
+	'gpt-4-turbo': '@cf/meta/llama-3.1-8b-instruct-fp8',
+	'gpt-4': '@cf/mistralai/mistral-small-3.1-24b-instruct',
+	'gpt-3.5-turbo': '@cf/meta/llama-3-8b-instruct',
+	'gpt-3.5-turbo-16k': '@cf/meta/llama-3.1-8b-instruct-awq',
+	'gpt-3.5-turbo-0125': '@cf/meta/llama-3.2-3b-instruct',
 	
 	// Completion models
-	'gpt-3.5-turbo-instruct': '@cf/meta/llama-2-7b-chat-int8',
-	'text-davinci-003': '@cf/meta/llama-2-7b-chat-int8',
-	'text-davinci-002': '@cf/meta/llama-2-7b-chat-int8',
+	'gpt-3.5-turbo-instruct': '@cf/meta/llama-3-8b-instruct',
+	'text-davinci-003': '@cf/meta/llama-3.1-8b-instruct-fp8',
+	'text-davinci-002': '@cf/meta/llama-3-8b-instruct',
+	'davinci-002': '@cf/meta/llama-3-8b-instruct',
+	'babbage-002': '@cf/qwen/qwen1.5-1.8b-chat',
+	'code-davinci-002': '@cf/defog/sqlcoder-7b-2',
 	
 	// Embedding models
 	'text-embedding-ada-002': '@cf/baai/bge-base-en-v1.5',
 	'text-embedding-3-small': '@cf/baai/bge-small-en-v1.5',
 	'text-embedding-3-large': '@cf/baai/bge-large-en-v1.5',
+	
+	// Vision models  
+	'gpt-4-vision-preview': '@cf/meta/llama-3.2-11b-vision-instruct',
+	'gpt-4o-vision': '@cf/meta/llama-3.2-11b-vision-instruct',
+	'gpt-4-turbo-vision': '@cf/llava-hf/llava-1.5-7b-hf',
 	
 	// STT models
 	'whisper-1': '@cf/openai/whisper',
@@ -66,6 +142,15 @@ export const MODEL_MAPPING = {
 	// TTS models
 	'tts-1': '@cf/myshell-ai/melotts',
 	'tts-1-hd': '@cf/myshell-ai/melotts',
+	
+	// Image generation models
+	'dall-e-2': '@cf/stabilityai/stable-diffusion-xl-base-1.0',
+	'dall-e-3': '@cf/bytedance/stable-diffusion-xl-lightning',
+	
+	// Moderation models
+	'text-moderation-latest': '@cf/meta/llama-guard-3-8b',
+	'text-moderation-stable': '@cf/meta/llama-guard-3-8b',
+	'text-moderation-007': '@cf/meta/llama-guard-3-8b',
 };
 
 // Voice mappings for TTS

@@ -542,6 +542,339 @@ Access-Control-Max-Age: 86400
 
 ---
 
+## Vision
+
+Analyze images and visual content using AI models.
+
+### Vision Chat Completions
+```
+POST /v1/chat/completions
+```
+
+Same as regular chat completions but supports image content in messages.
+
+#### Request Body
+
+```json
+{
+  "model": "gpt-4-vision-preview",
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "What's in this image?"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://example.com/image.jpg",
+            "detail": "high"
+          }
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Image Analysis
+```
+POST /v1/images/analyze
+```
+
+Analyze images for specific tasks.
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image_url` | string | Yes | URL of the image to analyze |
+| `task` | string | No | Analysis task ("describe", "ocr", "objects", "people", "scene", "custom") |
+| `prompt` | string | No | Custom prompt for analysis |
+| `model` | string | No | Vision model to use |
+
+#### Example Response
+
+```json
+{
+  "task": "describe",
+  "analysis": "This image shows a wooden boardwalk extending through a grassy wetland area...",
+  "model": "gpt-4-vision-preview",
+  "image_url": "https://example.com/image.jpg"
+}
+```
+
+### Image Classification
+```
+POST /v1/images/classify
+```
+
+Classify images into predefined categories.
+
+#### Request Body
+
+```json
+{
+  "image_url": "https://example.com/image.jpg",
+  "model": "@cf/microsoft/resnet-50",
+  "top_k": 5
+}
+```
+
+#### Example Response
+
+```json
+{
+  "object": "image_classification",
+  "model": "@cf/microsoft/resnet-50",
+  "predictions": [
+    {
+      "label": "golden_retriever",
+      "confidence": 0.95
+    },
+    {
+      "label": "dog",
+      "confidence": 0.87
+    }
+  ]
+}
+```
+
+---
+
+## Moderation
+
+Classify text content for safety and compliance.
+
+### Text Moderation
+```
+POST /v1/moderations
+```
+
+#### Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `input` | string/array | Yes | Text to moderate |
+| `model` | string | No | Moderation model to use |
+
+#### Example Request
+
+```json
+{
+  "input": "I want to hurt someone",
+  "model": "text-moderation-latest"
+}
+```
+
+#### Example Response
+
+```json
+{
+  "id": "modr-abc123",
+  "model": "text-moderation-latest",
+  "results": [
+    {
+      "flagged": true,
+      "categories": {
+        "hate": false,
+        "harassment": false,
+        "self-harm": false,
+        "sexual": false,
+        "violence": true,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.1,
+        "harassment": 0.2,
+        "self-harm": 0.0,
+        "sexual": 0.0,
+        "violence": 0.9,
+        "violence/graphic": 0.1
+      }
+    }
+  ]
+}
+```
+
+---
+
+## Fine-tuning
+
+Manage fine-tuning jobs (mock implementation).
+
+### List Fine-tuning Jobs
+```
+GET /v1/fine_tuning/jobs
+```
+
+### Create Fine-tuning Job
+```
+POST /v1/fine_tuning/jobs
+```
+
+#### Request Body
+
+```json
+{
+  "model": "gpt-3.5-turbo",
+  "training_file": "file-abc123",
+  "hyperparameters": {
+    "n_epochs": 4,
+    "batch_size": "auto",
+    "learning_rate_multiplier": "auto"
+  }
+}
+```
+
+### Get Fine-tuning Job
+```
+GET /v1/fine_tuning/jobs/{fine_tuning_job_id}
+```
+
+### Cancel Fine-tuning Job
+```
+POST /v1/fine_tuning/jobs/{fine_tuning_job_id}/cancel
+```
+
+### List Fine-tuning Events
+```
+GET /v1/fine_tuning/jobs/{fine_tuning_job_id}/events
+```
+
+---
+
+## Assistants API
+
+Create and manage AI assistants with persistent conversations.
+
+### Create Assistant
+```
+POST /v1/assistants
+```
+
+#### Request Body
+
+```json
+{
+  "model": "gpt-3.5-turbo",
+  "name": "My Assistant",
+  "description": "A helpful assistant",
+  "instructions": "You are a helpful assistant that answers questions about programming.",
+  "tools": [],
+  "metadata": {}
+}
+```
+
+### List Assistants
+```
+GET /v1/assistants
+```
+
+### Get Assistant
+```
+GET /v1/assistants/{assistant_id}
+```
+
+### Create Thread
+```
+POST /v1/threads
+```
+
+#### Request Body
+
+```json
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello!"
+    }
+  ],
+  "metadata": {}
+}
+```
+
+### Create Message
+```
+POST /v1/threads/{thread_id}/messages
+```
+
+#### Request Body
+
+```json
+{
+  "role": "user",
+  "content": "How do I use this API?",
+  "metadata": {}
+}
+```
+
+### Create Run
+```
+POST /v1/threads/{thread_id}/runs
+```
+
+#### Request Body
+
+```json
+{
+  "assistant_id": "asst_abc123",
+  "instructions": "Please address the user as Jane Doe.",
+  "max_tokens": 1000,
+  "temperature": 0.7,
+  "metadata": {}
+}
+```
+
+### List Messages
+```
+GET /v1/threads/{thread_id}/messages
+```
+
+---
+
+## Advanced Model Mappings
+
+The API automatically maps OpenAI model names to Cloudflare Workers AI models:
+
+### Latest Model Mappings
+
+#### Chat Models
+- `gpt-4o` → `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
+- `gpt-4o-mini` → `@cf/meta/llama-3.2-3b-instruct`
+- `gpt-4-turbo` → `@cf/meta/llama-3.1-8b-instruct-fp8`
+- `gpt-4` → `@cf/mistralai/mistral-small-3.1-24b-instruct`
+- `gpt-3.5-turbo` → `@cf/meta/llama-3-8b-instruct`
+
+#### Vision Models
+- `gpt-4-vision-preview` → `@cf/meta/llama-3.2-11b-vision-instruct`
+- `gpt-4o-vision` → `@cf/meta/llama-3.2-11b-vision-instruct`
+- `gpt-4-turbo-vision` → `@cf/llava-hf/llava-1.5-7b-hf`
+
+#### Embedding Models
+- `text-embedding-ada-002` → `@cf/baai/bge-base-en-v1.5`
+- `text-embedding-3-small` → `@cf/baai/bge-small-en-v1.5`
+- `text-embedding-3-large` → `@cf/baai/bge-large-en-v1.5`
+
+#### Audio Models
+- `whisper-1` → `@cf/openai/whisper`
+- `whisper-large-v3-turbo` → `@cf/openai/whisper-large-v3-turbo`
+- `tts-1` → `@cf/myshell-ai/melotts`
+- `tts-1-hd` → `@cf/myshell-ai/melotts`
+
+#### Image Generation Models
+- `dall-e-2` → `@cf/stabilityai/stable-diffusion-xl-base-1.0`
+- `dall-e-3` → `@cf/bytedance/stable-diffusion-xl-lightning`
+
+#### Moderation Models
+- `text-moderation-latest` → `@cf/meta/llama-guard-3-8b`
+- `text-moderation-stable` → `@cf/meta/llama-guard-3-8b`
+
+---
+
 ## Streaming Support
 
 Chat completions and completions support streaming responses using Server-Sent Events (SSE):
