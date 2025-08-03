@@ -1,10 +1,9 @@
+import { storeVectors, processAndStoreDocument, performRAGSearch } from '../utils/vectorize.js';
+import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+
 export const embeddingsHandler = async (request, env) => {
-	// Supported Cloudflare models
-	const SUPPORTED_MODELS = [
-		'@cf/baai/bge-base-en-v1.5',
-		'@cf/baai/bge-small-en-v1.5',
-		'@cf/baai/bge-large-en-v1.5',
-	];
+	// Supported Cloudflare models from unified configuration
+	const SUPPORTED_MODELS = MODEL_CATEGORIES.embeddings;
 
 	// Model dimensions for token counting approximation
 	const MODEL_DIMENSIONS = {
@@ -86,6 +85,29 @@ export const embeddingsHandler = async (request, env) => {
 			text: inputText,
 			pooling: pooling,
 		});
+
+		// Optional: Store embeddings in Vectorize if configured and metadata provided
+		if (env.VECTOR_INDEX && json.store_in_vectorize && json.metadata) {
+			try {
+				const vectors = embeddings.data.map((embedding, index) => ({
+					id: json.metadata.ids?.[index] || `${Date.now()}_${index}`,
+					values: embedding,
+					metadata: {
+						...json.metadata.common,
+						...(json.metadata.individual?.[index] || {}),
+						text: inputText[index],
+						model,
+						createdAt: new Date().toISOString(),
+					},
+				}));
+
+				await storeVectors(env.VECTOR_INDEX, vectors);
+				console.log(`Stored ${vectors.length} embeddings in Vectorize`);
+			} catch (vectorizeError) {
+				console.error('Failed to store in Vectorize:', vectorizeError);
+				// Continue with the response even if Vectorize storage fails
+			}
+		}
 
 		// Calculate approximate token usage
 		const totalTokens = inputText.reduce((sum, text) => sum + Math.ceil(text.length / 4), 0);

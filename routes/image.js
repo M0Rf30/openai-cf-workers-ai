@@ -23,17 +23,12 @@ export const imageGenerationHandler = async (request, env) => {
 				}
 			}
 
+			import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+
 			// Handle model selection - use real Cloudflare model names directly
 			if (json?.model) {
-				// List of supported Cloudflare models
-				const supportedModels = [
-					'@cf/black-forest-labs/flux-1-schnell',
-					'@cf/bytedance/stable-diffusion-xl-lightning',
-					'@cf/runwayml/stable-diffusion-v1-5-img2img',
-					'@cf/runwayml/stable-diffusion-v1-5-inpainting',
-					'@cf/stabilityai/stable-diffusion-xl-base-1.0',
-					'@cf/lykon/dreamshaper-8-lcm',
-				];
+				// Use supported Cloudflare models from unified configuration
+				const supportedModels = MODEL_CATEGORIES.image_generation;
 
 				// Check if the provided model is supported
 				if (supportedModels.includes(json.model)) {
@@ -43,6 +38,9 @@ export const imageGenerationHandler = async (request, env) => {
 						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
 					);
 				}
+			} else {
+				// Use default model if none provided
+				model = DEFAULT_MODELS.image_generation;
 			}
 
 			const inputs = {

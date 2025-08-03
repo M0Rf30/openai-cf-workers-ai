@@ -7,6 +7,11 @@ import { embeddingsHandler } from './routes/embeddings';
 import { transcriptionHandler, translationHandler, speechHandler } from './routes/audio';
 import { getImageHandler, imageGenerationHandler } from './routes/image';
 import { modelsHandler } from './routes/models';
+import { storeDocumentHandler, ragSearchHandler, ragChatHandler } from './routes/rag';
+
+// import utilities
+import { rateLimitMiddleware } from './utils/rateLimit';
+import { RateLimiter } from './utils/rateLimiter';
 
 // get preflight and corsify pair
 const { preflight, corsify } = cors();
@@ -23,6 +28,23 @@ function extractToken(authorizationHeader) {
 	}
 	return null;
 }
+
+// MIDDLEWARE: Rate limiting
+const rateLimit = async (request, env) => {
+	// Configure rate limits based on endpoint
+	let limit = 100; // Default requests per hour
+	let windowMs = 3600000; // 1 hour in milliseconds
+
+	const url = new URL(request.url);
+	if (url.pathname.includes('/chat/') || url.pathname.includes('/completions')) {
+		limit = 50; // More restrictive for AI endpoints
+	} else if (url.pathname.includes('/images/')) {
+		limit = 20; // Even more restrictive for image generation
+	}
+
+	return rateLimitMiddleware(request, env, limit, windowMs);
+};
+
 // MIDDLEWARE: withAuthenticatedUser - embeds user in Request or returns a 401
 const bearerAuthentication = (request, env) => {
 	const authorizationHeader = request.headers.get('Authorization');
@@ -36,6 +58,7 @@ const bearerAuthentication = (request, env) => {
 };
 
 router
+	.all('*', rateLimit)
 	.all('*', bearerAuthentication)
 	.post('/chat/completions', chatHandler)
 	.post('/completions', completionHandler)
@@ -45,9 +68,16 @@ router
 	.post('/audio/speech', speechHandler)
 	.post('/images/generations', imageGenerationHandler)
 	.get('/images/get/:name', getImageHandler)
-	.get('/models', modelsHandler);
+	.get('/models', modelsHandler)
+	// RAG endpoints
+	.post('/rag/documents', storeDocumentHandler)
+	.post('/rag/search', ragSearchHandler)
+	.post('/rag/chat', ragChatHandler);
 
 // 404 for everything else
 router.all('*', () => new Response('404, not found!', { status: 404 }));
+
+// Export the Durable Object
+export { RateLimiter };
 
 export default router;

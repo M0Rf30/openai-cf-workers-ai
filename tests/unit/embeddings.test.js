@@ -24,7 +24,7 @@ describe('Embeddings Handler', () => {
 	it('should handle single text embedding', async () => {
 		const mockRequest = createMockRequest({
 			input: 'Hello, world!',
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		mockEnv.AI.run.mockResolvedValue({
@@ -47,7 +47,7 @@ describe('Embeddings Handler', () => {
 	it('should handle batch text embeddings', async () => {
 		const mockRequest = createMockRequest({
 			input: ['Hello, world!', 'How are you?'],
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		mockEnv.AI.run.mockResolvedValue({
@@ -68,7 +68,7 @@ describe('Embeddings Handler', () => {
 
 	it('should handle missing input error', async () => {
 		const mockRequest = createMockRequest({
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
@@ -79,7 +79,7 @@ describe('Embeddings Handler', () => {
 	it('should handle empty input error', async () => {
 		const mockRequest = createMockRequest({
 			input: '',
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
@@ -90,7 +90,7 @@ describe('Embeddings Handler', () => {
 	it('should handle empty array input error', async () => {
 		const mockRequest = createMockRequest({
 			input: [],
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
@@ -148,7 +148,7 @@ describe('Embeddings Handler', () => {
 	it('should include usage information', async () => {
 		const mockRequest = createMockRequest({
 			input: 'Hello, world!',
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		mockEnv.AI.run.mockResolvedValue({
@@ -167,7 +167,7 @@ describe('Embeddings Handler', () => {
 	it('should handle AI service errors', async () => {
 		const mockRequest = createMockRequest({
 			input: 'Hello, world!',
-			model: 'text-embedding-ada-002',
+			model: '@cf/baai/bge-base-en-v1.5',
 		});
 
 		mockEnv.AI.run.mockRejectedValue(new Error('AI service error'));

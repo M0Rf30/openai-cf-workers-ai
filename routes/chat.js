@@ -1,3 +1,11 @@
+import { generateCacheKey, cacheResponse, getCachedResponse, shouldCache } from '../utils/cache.js';
+import {
+	processFunctionMessages,
+	addFunctionContext,
+	parseFunctionCall,
+	formatFunctionCallResponse,
+} from '../utils/functionCalling.js';
+
 export const chatHandler = async (request, env) => {
 	let model = '@cf/meta/llama-4-scout-17b-16e-instruct'; // Default model
 	let messages = [];
@@ -12,66 +20,12 @@ export const chatHandler = async (request, env) => {
 		if (request.headers.get('Content-Type') === 'application/json') {
 			let json = await request.json();
 
+			import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+
 			// Handle model selection - use real Cloudflare model names directly
 			if (json?.model) {
-				// List of supported Cloudflare models
-				const supportedModels = [
-					'@cf/qwen/qwen1.5-0.5b-chat',
-					'@cf/huggingface/distilbert-sst-2-int8',
-					'@cf/google/gemma-2b-it-lora',
-					'@hf/nexusflow/starling-lm-7b-beta',
-					'@cf/meta/llama-3-8b-instruct',
-					'@cf/meta/llama-3.2-3b-instruct',
-					'@hf/thebloke/llamaguard-7b-awq',
-					'@hf/thebloke/neural-chat-7b-v3-1-awq',
-					'@cf/meta/llama-guard-3-8b',
-					'@cf/meta/llama-2-7b-chat-fp16',
-					'@cf/mistral/mistral-7b-instruct-v0.1',
-					'@cf/mistral/mistral-7b-instruct-v0.2-lora',
-					'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
-					'@hf/mistral/mistral-7b-instruct-v0.2',
-					'@cf/fblgit/una-cybertron-7b-v2-bf16',
-					'@cf/llava-hf/llava-1.5-7b-hf',
-					'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
-					'@cf/thebloke/discolm-german-7b-v1-awq',
-					'@cf/meta/llama-2-7b-chat-int8',
-					'@cf/meta/llama-3.1-8b-instruct-fp8',
-					'@hf/thebloke/mistral-7b-instruct-v0.1-awq',
-					'@cf/qwen/qwen1.5-7b-chat-awq',
-					'@cf/meta/llama-3.2-1b-instruct',
-					'@hf/thebloke/llama-2-13b-chat-awq',
-					'@cf/microsoft/resnet-50',
-					'@hf/thebloke/deepseek-coder-6.7b-base-awq',
-					'@cf/meta-llama/llama-2-7b-chat-hf-lora',
-					'@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-					'@hf/thebloke/openhermes-2.5-mistral-7b-awq',
-					'@cf/meta/m2m100-1.2b',
-					'@hf/thebloke/deepseek-coder-6.7b-instruct-awq',
-					'@cf/baai/bge-small-en-v1.5',
-					'@cf/qwen/qwen2.5-coder-32b-instruct',
-					'@cf/deepseek-ai/deepseek-math-7b-instruct',
-					'@cf/tiiuae/falcon-7b-instruct',
-					'@hf/nousresearch/hermes-2-pro-mistral-7b',
-					'@cf/meta/llama-3.1-8b-instruct-awq',
-					'@cf/unum/uform-gen2-qwen-500m',
-					'@hf/thebloke/zephyr-7b-beta-awq',
-					'@cf/google/gemma-7b-it-lora',
-					'@cf/qwen/qwen1.5-1.8b-chat',
-					'@cf/mistralai/mistral-small-3.1-24b-instruct',
-					'@cf/meta/llama-3-8b-instruct-awq',
-					'@cf/meta/llama-3.2-11b-vision-instruct',
-					'@cf/defog/sqlcoder-7b-2',
-					'@cf/microsoft/phi-2',
-					'@hf/meta-llama/meta-llama-3-8b-instruct',
-					'@cf/facebook/bart-large-cnn',
-					'@cf/baai/bge-reranker-base',
-					'@hf/google/gemma-7b-it',
-					'@cf/qwen/qwen1.5-14b-chat-awq',
-					'@cf/openchat/openchat-3.5-0106',
-					'@cf/meta/llama-4-scout-17b-16e-instruct',
-					'@cf/google/gemma-3-12b-it',
-					'@cf/qwen/qwq-32b',
-				];
+				// Use supported Cloudflare models from unified configuration
+				const supportedModels = MODEL_CATEGORIES.chat;
 
 				// Check if the provided model is supported
 				if (supportedModels.includes(json.model)) {
@@ -81,6 +35,9 @@ export const chatHandler = async (request, env) => {
 						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
 					);
 				}
+			} else {
+				// Use default model if none provided
+				model = DEFAULT_MODELS.chat;
 			}
 
 			if (json?.messages) {
@@ -123,6 +80,34 @@ export const chatHandler = async (request, env) => {
 					? Math.max(0, Math.min(json.top_p, 1)) // Clamp between 0 and 1
 					: 0.9; // Default top_p
 
+			// Handle function calling
+			let tools = null;
+			let toolChoice = null;
+			if (json?.tools && Array.isArray(json.tools)) {
+				tools = json.tools;
+				toolChoice = json?.tool_choice || 'auto';
+
+				// Validate tool definitions
+				for (const tool of tools) {
+					if (tool.type !== 'function') {
+						throw new Error(`Unsupported tool type: ${tool.type}. Only 'function' is supported.`);
+					}
+					if (!tool.function?.name) {
+						throw new Error('Tool function must have a name');
+					}
+				}
+			}
+
+			// Legacy function calling support
+			if (json?.functions && Array.isArray(json.functions)) {
+				// Convert legacy functions to tools format
+				tools = json.functions.map(func => ({
+					type: 'function',
+					function: func,
+				}));
+				toolChoice = json?.function_call || 'auto';
+			}
+
 			// Log parameters for debugging
 			console.log('AI Parameters:', {
 				model,
@@ -131,13 +116,19 @@ export const chatHandler = async (request, env) => {
 				topP,
 				messageCount: messages.length,
 				streaming: json.stream,
+				toolsCount: tools?.length || 0,
+				toolChoice,
 			});
 
 			let buffer = '';
 			const decoder = new TextDecoder();
 			const encoder = new TextEncoder();
+			let isFinished = false;
+
 			const transformer = new TransformStream({
 				transform(chunk, controller) {
+					if (isFinished) return;
+
 					buffer += decoder.decode(chunk);
 					// Process buffered data and try to find the complete message
 					while (true) {
@@ -155,35 +146,81 @@ export const chatHandler = async (request, env) => {
 						try {
 							if (line.startsWith('data: ')) {
 								const content = line.slice('data: '.length);
-								console.log(content);
 								const doneflag = content.trim() == '[DONE]';
 								if (doneflag) {
+									// Send final chunk with finish_reason
+									const finalChunk =
+										'data: ' +
+										JSON.stringify({
+											id: uuid,
+											created,
+											object: 'chat.completion.chunk',
+											model: json.model || model,
+											choices: [
+												{
+													delta: {},
+													index: 0,
+													finish_reason: 'stop',
+												},
+											],
+										}) +
+										'\n\n';
+									controller.enqueue(encoder.encode(finalChunk));
 									controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+									isFinished = true;
 									return;
 								}
 
 								const data = JSON.parse(content);
-								const newChunk =
-									'data: ' +
-									JSON.stringify({
-										id: uuid,
-										created,
-										object: 'chat.completion.chunk',
-										model: json.model || model, // Return the requested model name
-										choices: [
-											{
-												delta: { content: data.response },
-												index: 0,
-												finish_reason: null,
-											},
-										],
-									}) +
-									'\n\n';
-								controller.enqueue(encoder.encode(newChunk));
+								if (data.response) {
+									const newChunk =
+										'data: ' +
+										JSON.stringify({
+											id: uuid,
+											created,
+											object: 'chat.completion.chunk',
+											model: json.model || model,
+											choices: [
+												{
+													delta: {
+														role: 'assistant',
+														content: data.response,
+													},
+													index: 0,
+													finish_reason: null,
+												},
+											],
+										}) +
+										'\n\n';
+									controller.enqueue(encoder.encode(newChunk));
+								}
 							}
 						} catch (err) {
-							console.error('Error parsing line:', err);
+							console.error('Error parsing streaming line:', err);
 						}
+					}
+				},
+				flush(controller) {
+					// Ensure stream ends properly if not already finished
+					if (!isFinished) {
+						const finalChunk =
+							'data: ' +
+							JSON.stringify({
+								id: uuid,
+								created,
+								object: 'chat.completion.chunk',
+								model: json.model || model,
+								choices: [
+									{
+										delta: {},
+										index: 0,
+										finish_reason: 'stop',
+									},
+								],
+							}) +
+							'\n\n';
+						controller.enqueue(encoder.encode(finalChunk));
+						controller.enqueue(encoder.encode('data: [DONE]\n\n'));
 					}
 				},
 			});
@@ -197,6 +234,34 @@ export const chatHandler = async (request, env) => {
 				top_p: topP,
 			};
 
+			// Process messages for function calling
+			let processedMessages = messages;
+			if (tools) {
+				// Convert function calling messages to a format Cloudflare Workers AI understands
+				processedMessages = processFunctionMessages(messages, tools);
+				processedMessages = addFunctionContext(processedMessages, tools);
+			}
+
+			aiParams.messages = processedMessages;
+
+			// Check cache for non-streaming requests (don't cache function calls)
+			let cachedResponse = null;
+			let cacheKey = null;
+
+			if (env.CACHE_KV && shouldCache(aiParams) && !tools) {
+				cacheKey = generateCacheKey(model, processedMessages, aiParams);
+				cachedResponse = await getCachedResponse(env.CACHE_KV, cacheKey);
+
+				if (cachedResponse) {
+					console.log('Returning cached response');
+					return Response.json({
+						...cachedResponse,
+						id: uuid, // Use new UUID for each request
+						created, // Use current timestamp
+					});
+				}
+			}
+
 			// Run the AI model with configured parameters
 			const aiResp = await env.AI.run(model, aiParams);
 
@@ -206,17 +271,45 @@ export const chatHandler = async (request, env) => {
 			}
 
 			// Piping the readableStream through the transformStream
-			return json.stream
-				? new Response(aiResp.pipeThrough(transformer), {
-						headers: {
-							'content-type': 'text/event-stream',
-							'Cache-Control': 'no-cache',
-							'Connection': 'keep-alive',
-						},
-					})
-				: Response.json({
+			if (json.stream) {
+				return new Response(aiResp.pipeThrough(transformer), {
+					headers: {
+						'content-type': 'text/event-stream',
+						'Cache-Control': 'no-cache',
+						'Connection': 'keep-alive',
+					},
+				});
+			} else {
+				// Process the response for potential function calls
+				const { hasFunction, functionCall, content } = parseFunctionCall(aiResp.response);
+
+				let response;
+				if (hasFunction && tools) {
+					// Return function call response
+					const message = formatFunctionCallResponse(functionCall, content);
+					response = {
 						id: uuid,
-						model: json.model || model, // Return the requested model name
+						model: json.model || model,
+						created,
+						object: 'chat.completion',
+						choices: [
+							{
+								index: 0,
+								message,
+								finish_reason: 'tool_calls',
+							},
+						],
+						usage: {
+							prompt_tokens: 0,
+							completion_tokens: 0,
+							total_tokens: 0,
+						},
+					};
+				} else {
+					// Regular text response
+					response = {
+						id: uuid,
+						model: json.model || model,
 						created,
 						object: 'chat.completion',
 						choices: [
@@ -234,7 +327,18 @@ export const chatHandler = async (request, env) => {
 							completion_tokens: 0,
 							total_tokens: 0,
 						},
-					});
+					};
+				}
+
+				// Cache the response if caching is enabled (don't cache function calls)
+				if (env.CACHE_KV && cacheKey && shouldCache(aiParams) && !hasFunction) {
+					// Cache for 1 hour by default, can be configured
+					const cacheTtl = env.CACHE_TTL_SECONDS ? parseInt(env.CACHE_TTL_SECONDS) : 3600;
+					await cacheResponse(env.CACHE_KV, cacheKey, response, cacheTtl);
+				}
+
+				return Response.json(response);
+			}
 		}
 	} catch (e) {
 		error = e;

@@ -1,16 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { modelsHandler } from '../../routes/models';
 
 const createMockEnv = () => ({
-	AI: {
-		run: vi.fn(),
-	},
-	ACCESS_TOKEN: 'test-token',
-});
-
-const createMockRequest = () => ({
-	method: 'GET',
-	headers: new Map(),
+	CLOUDFLARE_ACCOUNT_ID: 'test-account-id',
+	CLOUDFLARE_API_TOKEN: 'test-api-token',
 });
 
 describe('Models Handler', () => {
@@ -18,103 +11,123 @@ describe('Models Handler', () => {
 
 	beforeEach(() => {
 		mockEnv = createMockEnv();
-		vi.clearAllMocks();
+		vi.stubGlobal('fetch', vi.fn());
 	});
 
-	it('should return list of available models', async () => {
-		const mockRequest = createMockRequest();
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+	const mockApiResponse = {
+		result: [
+			{
+				name: '@cf/meta/llama-2-7b-chat-fp16',
+				source: 1,
+			},
+			{
+				name: '@cf/openai/whisper',
+				source: 1,
+			},
+			{
+				name: '@cf/myshell-ai/melotts',
+				source: 1,
+			},
+			{
+				name: '@cf/baai/bge-base-en-v1.5',
+				source: 1,
+			},
+		],
+	};
+
+	it('should return list of available models', async () => {
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
+
+		const response = await modelsHandler({}, mockEnv);
 		const result = await response.json();
 
 		expect(response.status).toBe(200);
 		expect(result.object).toBe('list');
-		expect(result.data).toBeInstanceOf(Array);
-		expect(result.data.length).toBeGreaterThan(0);
+		expect(result.data.length).toBe(mockApiResponse.result.length);
 	});
 
 	it('should include STT models', async () => {
-		const mockRequest = createMockRequest();
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+		const response = await modelsHandler({}, mockEnv);
 		const result = await response.json();
 
-		const sttModels = result.data.filter(model => 
-			model.capabilities && model.capabilities.includes('transcription')
-		);
-
-		expect(sttModels.length).toBeGreaterThan(0);
-		expect(sttModels[0]).toMatchObject({
-			object: 'model',
-			owned_by: 'cloudflare',
-			capabilities: expect.arrayContaining(['transcription']),
-		});
+		const sttModel = result.data.find(model => model.id === '@cf/openai/whisper');
+		expect(sttModel).toBeDefined();
 	});
 
 	it('should include TTS models', async () => {
-		const mockRequest = createMockRequest();
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+		const response = await modelsHandler({}, mockEnv);
 		const result = await response.json();
 
-		const ttsModels = result.data.filter(model => 
-			model.capabilities && model.capabilities.includes('text-to-speech')
-		);
-
-		expect(ttsModels.length).toBeGreaterThan(0);
-		expect(ttsModels[0]).toMatchObject({
-			object: 'model',
-			owned_by: 'cloudflare',
-			capabilities: expect.arrayContaining(['text-to-speech']),
-		});
+		const ttsModel = result.data.find(model => model.id === '@cf/myshell-ai/melotts');
+		expect(ttsModel).toBeDefined();
 	});
 
 	it('should include chat models', async () => {
-		const mockRequest = createMockRequest();
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+		const response = await modelsHandler({}, mockEnv);
 		const result = await response.json();
 
-		const chatModels = result.data.filter(model => 
-			model.capabilities && model.capabilities.includes('chat')
-		);
-
-		expect(chatModels.length).toBeGreaterThan(0);
+		const chatModel = result.data.find(model => model.id === '@cf/meta/llama-2-7b-chat-fp16');
+		expect(chatModel).toBeDefined();
 	});
 
 	it('should include embedding models', async () => {
-		const mockRequest = createMockRequest();
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+		const response = await modelsHandler({}, mockEnv);
 		const result = await response.json();
 
-		const embeddingModels = result.data.filter(model => 
-			model.capabilities && model.capabilities.includes('embeddings')
-		);
-
-		expect(embeddingModels.length).toBeGreaterThan(0);
+		const embeddingModel = result.data.find(model => model.id === '@cf/baai/bge-base-en-v1.5');
+		expect(embeddingModel).toBeDefined();
 	});
 
 	it('should have proper model structure', async () => {
-		const mockRequest = createMockRequest();
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+		const response = await modelsHandler({}, mockEnv);
 		const result = await response.json();
 
 		const model = result.data[0];
-		expect(model).toMatchObject({
-			id: expect.any(String),
-			object: 'model',
-			created: expect.any(Number),
-			owned_by: expect.any(String),
-		});
+		expect(model).toHaveProperty('id');
+		expect(model).toHaveProperty('object', 'model');
+		expect(model).toHaveProperty('created');
+		expect(model).toHaveProperty('owned_by');
 	});
 
 	it('should not require authentication for models endpoint', async () => {
-		// The models endpoint is typically public in OpenAI API
-		const mockRequest = createMockRequest();
+		fetch.mockResolvedValue({
+			ok: true,
+			json: () => Promise.resolve(mockApiResponse),
+		});
 
-		const response = await modelsHandler(mockRequest, mockEnv);
+		const response = await modelsHandler({}, mockEnv);
 		
 		expect(response.status).toBe(200);
 	});

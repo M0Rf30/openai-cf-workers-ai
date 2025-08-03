@@ -23,7 +23,7 @@ describe('Chat Handler', () => {
 
 	it('should handle basic chat completion', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 			messages: [
 				{ role: 'user', content: 'Hello!' }
 			],
@@ -44,12 +44,22 @@ describe('Chat Handler', () => {
 
 	it('should handle streaming responses', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 			messages: [
 				{ role: 'user', content: 'Hello!' }
 			],
 			stream: true,
 		});
+
+		mockEnv.AI.run.mockResolvedValue(
+			new ReadableStream({
+				start(controller) {
+					controller.enqueue('data: {"response":"Hello!"}\n\n');
+					controller.enqueue('data: [DONE]\n\n');
+					controller.close();
+				},
+			})
+		);
 
 		const response = await chatHandler(mockRequest, mockEnv);
 
@@ -59,7 +69,7 @@ describe('Chat Handler', () => {
 
 	it('should handle system messages', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 			messages: [
 				{ role: 'system', content: 'You are a helpful assistant.' },
 				{ role: 'user', content: 'Hello!' }
@@ -86,7 +96,7 @@ describe('Chat Handler', () => {
 
 	it('should handle max_tokens parameter', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 			messages: [
 				{ role: 'user', content: 'Hello!' }
 			],
@@ -109,7 +119,7 @@ describe('Chat Handler', () => {
 
 	it('should handle missing messages error', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 		});
 
 		const response = await chatHandler(mockRequest, mockEnv);
@@ -119,7 +129,7 @@ describe('Chat Handler', () => {
 
 	it('should handle empty messages error', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 			messages: [],
 		});
 
@@ -130,7 +140,7 @@ describe('Chat Handler', () => {
 
 	it('should handle temperature parameter', async () => {
 		const mockRequest = createMockRequest({
-			model: 'gpt-3.5-turbo',
+			model: '@cf/qwen/qwen1.5-0.5b-chat',
 			messages: [
 				{ role: 'user', content: 'Hello!' }
 			],

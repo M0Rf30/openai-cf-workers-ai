@@ -67,6 +67,14 @@ POST /v1/images/generations
 ```
 Generate images from text prompts.
 
+### Retrieval-Augmented Generation (RAG)
+```
+POST /v1/rag/store
+POST /v1/rag/search
+POST /v1/rag/chat
+```
+Store documents for RAG, search documents, and perform RAG-enhanced chat completions.
+
 ## 🛠 Setup and Deployment
 
 ### Prerequisites
@@ -117,17 +125,23 @@ Set these in your Cloudflare Workers dashboard or via `wrangler secret`:
 The API automatically maps OpenAI model names to Cloudflare Workers AI models:
 
 #### Chat Models
-- `gpt-3.5-turbo` → `@cf/meta/llama-2-7b-chat-int8`
-- `gpt-4` → `@cf/mistral/mistral-7b-instruct-v0.1`
+- `gpt-3.5-turbo` → `@cf/meta/llama-3.1-8b-instruct-fp8`
+- `gpt-4` → `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
 
 #### Embedding Models  
 - `text-embedding-ada-002` → `@cf/baai/bge-base-en-v1.5`
 - `text-embedding-3-small` → `@cf/baai/bge-small-en-v1.5`
+- `text-embedding-3-large` → `@cf/baai/bge-large-en-v1.5`
 
 #### Audio Models
 - `whisper-1` → `@cf/openai/whisper`
 - `whisper-large-v3-turbo` → `@cf/openai/whisper-large-v3-turbo`
 - `tts-1` → `@cf/myshell-ai/melotts`
+- `tts-1-hd` → `@cf/myshell-ai/melotts`
+
+#### Image Models
+- `dall-e-2` → `@cf/black-forest-labs/flux-1-schnell`
+- `dall-e-3` → `@cf/black-forest-labs/flux-1-schnell`
 
 ## 📖 Usage Examples
 

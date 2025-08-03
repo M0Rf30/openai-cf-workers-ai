@@ -1,24 +1,22 @@
 // OpenAI-Compatible Audio Handler for Cloudflare Workers AI
 // Supports both TTS and STT with dynamic model selection
 
+import {
+	storeFile,
+	getFile,
+	generateFileKey,
+	createCachedResponse,
+	getCachedFile,
+} from '../utils/r2Storage.js';
+
+import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+
 // Available Cloudflare Workers AI models
 const AVAILABLE_MODELS = {
-	stt: ['@cf/openai/whisper', '@cf/openai/whisper-tiny-en', '@cf/openai/whisper-large-v3-turbo'],
-	tts: ['@cf/myshell-ai/melotts'],
-	translation: ['@cf/meta/m2m100-1.2b'],
-	language_detection: ['@cf/meta/llama-2-7b-chat-int8'],
-};
-
-// OpenAI-compatible model name mappings
-const MODEL_MAPPING = {
-	// STT models
-	'whisper-1': '@cf/openai/whisper',
-	'whisper': '@cf/openai/whisper',
-	'whisper-tiny-en': '@cf/openai/whisper-tiny-en',
-	'whisper-large-v3-turbo': '@cf/openai/whisper-large-v3-turbo',
-	// TTS models
-	'tts-1': '@cf/myshell-ai/melotts',
-	'tts-1-hd': '@cf/myshell-ai/melotts',
+	stt: MODEL_CATEGORIES.audio_stt,
+	tts: MODEL_CATEGORIES.audio_tts,
+	translation: MODEL_CATEGORIES.audio_translation,
+	language_detection: MODEL_CATEGORIES.audio_language_detection,
 };
 
 // OpenAI-compatible voices for TTS (mapped to language codes for MeloTTS)
@@ -554,6 +552,30 @@ export const speechHandler = async (request, env) => {
 		// Note: MeloTTS doesn't support speed parameter according to the documentation
 		// If speed is needed, it would require post-processing
 
+		// Check if already cached in R2 (for large audio files)
+		let audioKey = null;
+		let shouldStoreInR2 = false;
+
+		if (env.AUDIO_BUCKET) {
+			// Generate a cache key based on input parameters
+			const cacheKey = await crypto.subtle.digest(
+				'SHA-256',
+				new TextEncoder().encode(`${model}:${input}:${voice}:${response_format}`)
+			);
+			const cacheKeyHex = Array.from(new Uint8Array(cacheKey))
+				.map(b => b.toString(16).padStart(2, '0'))
+				.join('');
+
+			audioKey = `tts/${cacheKeyHex.substring(0, 16)}.mp3`;
+
+			// Check if audio already exists in R2
+			const cachedAudio = await getFile(env.AUDIO_BUCKET, audioKey);
+			if (cachedAudio) {
+				console.log('Returning cached audio from R2');
+				return createCachedResponse(cachedAudio, request, { waitUntil: () => {} });
+			}
+		}
+
 		const response = await env.AI.run(modelPath, aiInput);
 
 		// MeloTTS returns either:
@@ -600,11 +622,32 @@ export const speechHandler = async (request, env) => {
 				filename = 'speech.mp3';
 		}
 
+		// Store large audio files in R2 if bucket is available
+		if (env.AUDIO_BUCKET && audioKey && audioData.byteLength > 1024 * 1024) {
+			// Store files > 1MB
+			try {
+				await storeFile(env.AUDIO_BUCKET, audioKey, audioData, {
+					contentType,
+					custom: {
+						model,
+						input: input.substring(0, 100), // Store truncated input for reference
+						voice,
+						format: response_format,
+					},
+				});
+				console.log(`Large audio file stored in R2: ${audioKey}`);
+			} catch (error) {
+				console.error('Failed to store audio in R2:', error);
+				// Continue without storing, just serve the file
+			}
+		}
+
 		// Return audio as blob
 		return new Response(audioData, {
 			headers: {
 				'Content-Type': contentType,
 				'Content-Disposition': `attachment; filename="${filename}"`,
+				'Cache-Control': 'public, max-age=3600',
 			},
 		});
 	} catch (error) {

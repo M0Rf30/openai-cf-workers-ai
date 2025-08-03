@@ -25,7 +25,6 @@ const createMockFormData = (data = {}) => {
 	Object.entries(data).forEach(([key, value]) => {
 		formData.set(key, value);
 	});
-	formData.get = (key) => formData.get(key);
 	return formData;
 };
 
@@ -61,6 +60,11 @@ describe('Audio Routes', () => {
 
 			mockEnv.AI.run.mockResolvedValue({
 				text: 'Hello, world!',
+				duration: 2.5,
+				words: [
+					{ word: 'Hello,', start: 0.0, end: 0.5 },
+					{ word: 'world!', start: 0.6, end: 2.5 },
+				],
 			});
 
 			const response = await transcriptionHandler(mockRequest, mockEnv);
@@ -116,6 +120,11 @@ describe('Audio Routes', () => {
 
 			mockEnv.AI.run.mockResolvedValue({
 				text: 'Hello, world!',
+				duration: 2.5,
+				words: [
+					{ word: 'Hello,', start: 0.0, end: 0.5 },
+					{ word: 'world!', start: 0.6, end: 2.5 },
+				],
 			});
 
 			const response = await transcriptionHandler(mockRequest, mockEnv);
@@ -141,10 +150,11 @@ describe('Audio Routes', () => {
 
 			mockEnv.AI.run.mockResolvedValue({
 				text: 'Hello, world!',
-				transcription_info: {
-					language: 'en',
-					duration: 2.5,
-				},
+				duration: 2.5,
+				words: [
+					{ word: 'Hello,', start: 0.0, end: 0.5 },
+					{ word: 'world!', start: 0.6, end: 2.5 },
+				],
 				segments: [
 					{
 						id: 0,
