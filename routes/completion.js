@@ -172,11 +172,17 @@ export const completionHandler = async (request, env) => {
 				// Prepare AI parameters
 				const aiParams = {
 					stream: json.stream,
-					prompt: json.prompt,
 					max_tokens: maxTokens,
 					temperature,
 					top_p: topP,
 				};
+
+				// Special handling for OpenAI OSS models that require 'input' instead of 'prompt'
+				if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+					aiParams.input = json.prompt;
+				} else {
+					aiParams.prompt = json.prompt;
+				}
 
 				// Run the AI model with configured parameters
 				const aiResp = await env.AI.run(model, aiParams);
@@ -193,11 +199,17 @@ export const completionHandler = async (request, env) => {
 				// Non-streaming response
 				// Prepare AI parameters
 				const aiParams = {
-					prompt: json.prompt,
 					max_tokens: maxTokens,
 					temperature,
 					top_p: topP,
 				};
+
+				// Special handling for OpenAI OSS models that require 'input' instead of 'prompt'
+				if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+					aiParams.input = json.prompt;
+				} else {
+					aiParams.prompt = json.prompt;
+				}
 
 				// Run the AI model with configured parameters
 				const aiResp = await env.AI.run(model, aiParams);

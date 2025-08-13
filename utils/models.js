@@ -250,15 +250,11 @@ export const MODEL_CAPABILITIES = {
 	'@cf/lykon/dreamshaper-8-lcm': ['image-generation'],
 
 	// Vision models
-	'@cf/meta/llama-3.2-11b-vision-instruct': ['text-generation', 'vision'],
 	'@cf/llava-hf/llava-1.5-7b-hf': ['vision'],
 
 	// Classification models
 	'@cf/huggingface/distilbert-sst-2-int8': ['classification'],
 	'@cf/microsoft/resnet-50': ['image-classification'],
-
-	// Reranking models
-	'@cf/baai/bge-reranker-base': ['reranking'],
 };
 
 // Default models for each category

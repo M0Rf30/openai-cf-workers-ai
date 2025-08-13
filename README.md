@@ -61,6 +61,8 @@ GET /v1/models
 ```
 List all available AI models.
 
+> **Note**: The `@cf/openai/gpt-oss-120b` and `@cf/openai/gpt-oss-20b` models require special handling - they use the `input` parameter instead of `prompt`/`messages`. The API automatically handles this conversion.
+
 ### Image Generation
 ```
 POST /v1/images/generations

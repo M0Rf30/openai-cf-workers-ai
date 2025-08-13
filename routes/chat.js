@@ -227,21 +227,37 @@ export const chatHandler = async (request, env) => {
 			// Prepare AI parameters
 			const aiParams = {
 				stream: json.stream,
-				messages,
 				max_tokens: maxTokens,
 				temperature,
 				top_p: topP,
 			};
 
-			// Process messages for function calling
-			let processedMessages = messages;
-			if (tools) {
-				// Convert function calling messages to a format Cloudflare Workers AI understands
-				processedMessages = processFunctionMessages(messages, tools);
-				processedMessages = addFunctionContext(processedMessages, tools);
-			}
+			// Special handling for OpenAI OSS models that require 'input' instead of 'messages'
+			if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+				// For OSS models, we need to convert messages to a single input string
+				// This is a simple conversion - in a production environment, you might want more sophisticated formatting
+				let inputText = '';
+				for (const message of messages) {
+					if (message.role === 'system') {
+						inputText += `[SYSTEM] ${message.content}\n`;
+					} else if (message.role === 'user') {
+						inputText += `[USER] ${message.content}\n`;
+					} else if (message.role === 'assistant') {
+						inputText += `[ASSISTANT] ${message.content}\n`;
+					}
+				}
+				aiParams.input = inputText.trim();
+			} else {
+				// Process messages for function calling
+				let processedMessages = messages;
+				if (tools) {
+					// Convert function calling messages to a format Cloudflare Workers AI understands
+					processedMessages = processFunctionMessages(messages, tools);
+					processedMessages = addFunctionContext(processedMessages, tools);
+				}
 
-			aiParams.messages = processedMessages;
+				aiParams.messages = processedMessages;
+			}
 
 			// Check cache for non-streaming requests (don't cache function calls)
 			let cachedResponse = null;
