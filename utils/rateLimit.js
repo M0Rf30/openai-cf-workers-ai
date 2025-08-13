@@ -31,7 +31,7 @@ export async function checkRateLimit(
  * @param {Object} env - Environment variables
  * @returns {string} Rate limit identifier
  */
-export function getRateLimitIdentifier(request, env) {
+export function getRateLimitIdentifier(request, _env) {
 	// Check for API key first
 	const apiKey = request.headers.get('Authorization')?.replace('Bearer ', '');
 	if (apiKey) {

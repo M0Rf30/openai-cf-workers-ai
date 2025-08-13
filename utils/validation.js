@@ -7,7 +7,6 @@ import {
 	validateNumber,
 	validateArray,
 	validateEnum,
-	validateFile,
 	validateAudioFile,
 } from './errors.js';
 
@@ -125,7 +124,6 @@ export function validateChatCompletionRequest(body) {
 		stop,
 		presence_penalty,
 		frequency_penalty,
-		logit_bias,
 		user,
 	} = body;
 
@@ -380,7 +378,6 @@ export function validateCompletionRequest(body) {
 		presence_penalty,
 		frequency_penalty,
 		best_of,
-		logit_bias,
 		user,
 		suffix,
 	} = body;

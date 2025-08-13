@@ -1,5 +1,3 @@
-import { createHash } from 'crypto';
-
 /**
  * Generate a cache key from request parameters
  * @param {string} model - The model name
@@ -7,7 +5,7 @@ import { createHash } from 'crypto';
  * @param {Object} params - Additional parameters (temperature, max_tokens, etc.)
  * @returns {string} Cache key
  */
-export function generateCacheKey(model, messages, params = {}) {
+export async function generateCacheKey(model, messages, params = {}) {
 	const cacheData = {
 		model,
 		messages,
@@ -16,9 +14,12 @@ export function generateCacheKey(model, messages, params = {}) {
 		top_p: params.top_p || 0.9,
 	};
 
-	const hash = createHash('sha256');
-	hash.update(JSON.stringify(cacheData));
-	return `chat:${hash.digest('hex')}`;
+	const encoder = new TextEncoder();
+	const data = encoder.encode(JSON.stringify(cacheData));
+	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+	const hashArray = Array.from(new Uint8Array(hashBuffer));
+	const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+	return `chat:${hashHex}`;
 }
 
 /**

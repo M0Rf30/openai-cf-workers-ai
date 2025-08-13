@@ -1,20 +1,13 @@
-import { storeVectors, processAndStoreDocument, performRAGSearch } from '../utils/vectorize.js';
-import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+import { storeVectors } from '../utils/vectorize.js';
+import { MODEL_CATEGORIES } from '../utils/models.js';
+
+// Supported Cloudflare models from unified configuration
+const SUPPORTED_MODELS = MODEL_CATEGORIES.embeddings;
 
 export const embeddingsHandler = async (request, env) => {
-	// Supported Cloudflare models from unified configuration
-	const SUPPORTED_MODELS = MODEL_CATEGORIES.embeddings;
-
-	// Model dimensions for token counting approximation
-	const MODEL_DIMENSIONS = {
-		'@cf/baai/bge-base-en-v1.5': 768,
-		'@cf/baai/bge-small-en-v1.5': 384,
-		'@cf/baai/bge-large-en-v1.5': 1024,
-	};
 
 	let model = '@cf/baai/bge-base-en-v1.5';
 	let pooling = 'mean';
-	let error = null;
 
 	try {
 		// Check for proper content type
@@ -48,7 +41,6 @@ export const embeddingsHandler = async (request, env) => {
 
 		// Prepare input text
 		let inputText = json.input;
-		const isArray = Array.isArray(inputText);
 
 		// Ensure input is in the correct format
 		if (typeof inputText === 'string') {
@@ -129,7 +121,6 @@ export const embeddingsHandler = async (request, env) => {
 			},
 		});
 	} catch (e) {
-		error = e;
 		console.error('Embeddings error:', e);
 
 		// Handle specific Cloudflare AI errors
@@ -144,12 +135,12 @@ export const embeddingsHandler = async (request, env) => {
 			return Response.json({ error: 'Invalid input format or content' }, { status: 400 });
 		}
 
-		return Response.json({ error: error?.message || 'Internal server error' }, { status: 500 });
+		return Response.json({ error: 'AI service error' }, { status: 500 });
 	}
 };
 
 // Optional: Add a simple health check endpoint
-export const healthHandler = async (request, env) => {
+export const healthHandler = async (_request, _env) => {
 	return Response.json({
 		status: 'healthy',
 		timestamp: new Date().toISOString(),

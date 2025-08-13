@@ -1,4 +1,4 @@
-import { Router, cors, error, json } from 'itty-router';
+import { Router, error } from 'itty-router';
 
 // import the routes
 import { chatHandler } from './routes/chat';
@@ -10,11 +10,8 @@ import { modelsHandler } from './routes/models';
 import { storeDocumentHandler, ragSearchHandler, ragChatHandler } from './routes/rag';
 
 // import utilities
-import { rateLimitMiddleware } from './utils/rateLimit';
-import { RateLimiter } from './utils/rateLimiter';
 
-// get preflight and corsify pair
-const { preflight, corsify } = cors();
+// import { RateLimiter } from './utils/rateLimiter';
 
 // Create a new router
 const router = Router({ base: '/v1' });
@@ -78,6 +75,6 @@ router
 router.all('*', () => new Response('404, not found!', { status: 404 }));
 
 // Export the Durable Object
-export { RateLimiter };
+// export { RateLimiter };
 
 export default router;

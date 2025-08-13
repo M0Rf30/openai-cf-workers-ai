@@ -72,7 +72,7 @@ describe('Embeddings Handler', () => {
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
-		
+
 		expect(response.status).toBe(400);
 	});
 
@@ -83,7 +83,7 @@ describe('Embeddings Handler', () => {
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
-		
+
 		expect(response.status).toBe(400);
 	});
 
@@ -94,7 +94,7 @@ describe('Embeddings Handler', () => {
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
-		
+
 		expect(response.status).toBe(400);
 	});
 
@@ -108,13 +108,13 @@ describe('Embeddings Handler', () => {
 		});
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
-		
+
 		expect(response.status).toBe(200);
 		expect(mockEnv.AI.run).toHaveBeenCalledWith(
 			expect.any(String),
 			expect.objectContaining({
 				text: ['Hello, world!'],
-			})
+			}),
 		);
 	});
 
@@ -136,11 +136,11 @@ describe('Embeddings Handler', () => {
 			});
 
 			const response = await embeddingsHandler(mockRequest, mockEnv);
-			
+
 			expect(response.status).toBe(200);
 			expect(mockEnv.AI.run).toHaveBeenLastCalledWith(
 				model,
-				expect.any(Object)
+				expect.any(Object),
 			);
 		}
 	});
@@ -173,7 +173,9 @@ describe('Embeddings Handler', () => {
 		mockEnv.AI.run.mockRejectedValue(new Error('AI service error'));
 
 		const response = await embeddingsHandler(mockRequest, mockEnv);
-		
+		const result = await response.json();
+
 		expect(response.status).toBe(500);
+		expect(result.error).toBe('AI service error');
 	});
 });

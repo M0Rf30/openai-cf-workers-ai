@@ -1,15 +1,9 @@
 // OpenAI-Compatible Audio Handler for Cloudflare Workers AI
 // Supports both TTS and STT with dynamic model selection
 
-import {
-	storeFile,
-	getFile,
-	generateFileKey,
-	createCachedResponse,
-	getCachedFile,
-} from '../utils/r2Storage.js';
+import { storeFile, getFile, createCachedResponse } from '../utils/r2Storage.js';
 
-import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+import { MODEL_CATEGORIES, MODEL_MAPPING } from '../utils/models.js';
 
 // Available Cloudflare Workers AI models
 const AVAILABLE_MODELS = {
@@ -21,7 +15,7 @@ const AVAILABLE_MODELS = {
 
 // OpenAI-compatible voices for TTS (mapped to language codes for MeloTTS)
 const VOICE_MAPPING = {
-	alloy: 'it',
+	alloy: 'en',
 	echo: 'fr',
 	fable: 'en',
 };
@@ -190,7 +184,7 @@ export const transcriptionHandler = async (request, env) => {
 
 		// Format response based on response_format
 		switch (response_format) {
-		case 'json':
+		case 'json': {
 			// OpenAI compatible response format
 			const jsonResponse = {
 				text: transcriptionText,
@@ -244,13 +238,13 @@ export const transcriptionHandler = async (request, env) => {
 			}
 
 			return Response.json(jsonResponse);
-
+		}
 		case 'text':
 			return new Response(transcriptionText, {
 				headers: { 'Content-Type': 'text/plain' },
 			});
 
-		case 'srt':
+		case 'srt': {
 			// Convert to SRT format using word timings or segments
 			const srtSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
 			if (srtSegments.length > 0) {
@@ -267,8 +261,8 @@ export const transcriptionHandler = async (request, env) => {
 			return new Response(transcriptionText, {
 				headers: { 'Content-Type': 'text/plain' },
 			});
-
-		case 'vtt':
+		}
+		case 'vtt': {
 			// Use existing VTT output or create from segments/words
 			if (response.vtt) {
 				return new Response(response.vtt, {
@@ -291,8 +285,9 @@ export const transcriptionHandler = async (request, env) => {
 			return new Response(transcriptionText, {
 				headers: { 'Content-Type': 'text/plain' },
 			});
+		}
 
-		case 'verbose_json':
+		case 'verbose_json': {
 			// Return detailed response with all available information
 			const verboseResponse = {
 				task: 'transcribe',
@@ -310,6 +305,7 @@ export const transcriptionHandler = async (request, env) => {
 			}
 
 			return Response.json(verboseResponse);
+		}
 
 		default:
 			return Response.json({
@@ -512,7 +508,7 @@ export const speechHandler = async (request, env) => {
 		const body = await request.json();
 
 		// OpenAI-compatible parameters
-		const { model = 'tts-1', input, voice = 'alloy', response_format = 'mp3', speed = 1.0 } = body;
+		const { model = 'tts-1', input, voice = 'alloy', response_format = 'mp3' } = body;
 
 		if (!input) {
 			return Response.json(
@@ -554,7 +550,6 @@ export const speechHandler = async (request, env) => {
 
 		// Check if already cached in R2 (for large audio files)
 		let audioKey = null;
-		const shouldStoreInR2 = false;
 
 		if (env.AUDIO_BUCKET) {
 			// Generate a cache key based on input parameters
@@ -583,13 +578,11 @@ export const speechHandler = async (request, env) => {
 		// 2. Direct binary MP3 data
 
 		let audioData;
-		let isBase64 = false;
 
 		// Check if response is JSON with base64 audio
 		if (response && typeof response === 'object' && response.audio) {
 			// Base64 encoded audio
 			audioData = Uint8Array.from(atob(response.audio), c => c.charCodeAt(0));
-			isBase64 = true;
 		} else {
 			// Direct binary data
 			audioData = response;
@@ -665,7 +658,7 @@ export const speechHandler = async (request, env) => {
 };
 
 // Models endpoint - OpenAI compatible
-export const modelsHandler = async (request, env) => {
+export const modelsHandler = async (_request, _env) => {
 	const models = [];
 
 	// Add STT models

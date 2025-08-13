@@ -4,6 +4,7 @@
 	"description": "OpenAI-compatible API using Cloudflare Workers AI",
 	"private": true,
 	"main": "index.js",
+        "type": "module",
 	"scripts": {
 		"deploy": "wrangler deploy index.js",
 		"dev": "wrangler dev index.js --remote",
@@ -21,17 +22,23 @@
 		"typecheck": "echo 'No TypeScript files to check'",
 		"validate": "npm run lint && npm run test:unit"
 	},
-	"keywords": ["openai", "cloudflare", "workers", "ai", "api"],
+	"keywords": [
+		"openai",
+		"cloudflare",
+		"workers",
+		"ai",
+		"api"
+	],
 	"author": "",
 	"license": "MIT",
 	"dependencies": {
+		"context-optimizer-mcp-server": "^1.0.2",
 		"itty-router": "^5.0.18"
 	},
 	"devDependencies": {
-		"vitest": "^3.2.4",
-		"wrangler": "^4.26.1",
 		"eslint": "^9.0.0",
 		"prettier": "^3.0.0",
-		"@vitest/coverage-v8": "^2.0.0"
+		"vitest": "^3.2.4",
+		"wrangler": "^4.29.1"
 	}
 }

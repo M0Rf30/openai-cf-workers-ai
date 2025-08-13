@@ -128,7 +128,7 @@ describe('Models Handler', () => {
 		});
 
 		const response = await modelsHandler({}, mockEnv);
-		
+
 		expect(response.status).toBe(200);
 	});
 });

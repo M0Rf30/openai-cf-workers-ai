@@ -8,8 +8,8 @@ binding = "AI" # i.e. available in your Worker on env.AI
 # KV namespace for caching responses
 [[kv_namespaces]]
 binding = "CACHE_KV"
-id = "f6e3837d3f8c4dafb7080080c417007c"         # Replace with your actual KV namespace ID
-preview_id = "0fde4e041bc543498e08f0474fe39591" # Replace with your preview KV namespace ID
+id = "your-kv-namespace-id"  # Replace with your actual KV namespace ID
+preview_id = "your-preview-kv-namespace-id"  # Replace with your preview KV namespace ID
 
 # Durable Objects for rate limiting
 # [[durable_objects.bindings]]
@@ -42,8 +42,8 @@ binding = "VECTOR_INDEX"
 index_name = "openai-cf-embeddings"
 
 [vars]
-CLOUDFLARE_ACCOUNT_ID = "a7f2833c20d5fc9b6efd420b2911ab22" # replace with your own.
-CACHE_TTL_SECONDS = "3600"                                 # Cache TTL in seconds (1 hour)
+CLOUDFLARE_ACCOUNT_ID = "your-account-id" # replace with your own.
+CACHE_TTL_SECONDS = "3600"  # Cache TTL in seconds (1 hour)
 # MODEL_MAPPER = { "gpt-3.5-turbo" = "@cf/meta/llama-2-7b-chat-int8" } # Optional
 
 [observability]

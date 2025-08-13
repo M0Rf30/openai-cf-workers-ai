@@ -1,12 +1,12 @@
 import { uint8ArrayToBase64 } from '../utils/converters';
 import { uuidv4 } from '../utils/uuid';
 import { streamToBuffer } from '../utils/stream';
-import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
 
 export const imageGenerationHandler = async (request, env) => {
 	let model = '@cf/black-forest-labs/flux-1-schnell'; // Default model
 	let format = 'url';
-	let error = null;
+	const error = null;
 	const created = Math.floor(Date.now() / 1000);
 
 	try {
@@ -133,8 +133,22 @@ export const imageGenerationHandler = async (request, env) => {
 			}
 		}
 	} catch (e) {
-		error = e;
 		console.error('Image generation error:', e);
+		return new Response(
+			JSON.stringify({
+				error: {
+					message: e.message,
+					type: 'invalid_request_error',
+					code: 'invalid_request',
+				},
+			}),
+			{
+				status: 400,
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			},
+		);
 	}
 
 	// Error handling

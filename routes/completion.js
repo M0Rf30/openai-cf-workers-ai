@@ -1,8 +1,8 @@
-import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
 
 export const completionHandler = async (request, env) => {
 	let model = '@cf/mistral/mistral-7b-instruct-v0.1'; // Default model
-	let error = null;
+	const error = null;
 
 	// Get the current time in epoch seconds
 	const created = Math.floor(Date.now() / 1000);
@@ -241,8 +241,17 @@ export const completionHandler = async (request, env) => {
 			}
 		}
 	} catch (e) {
-		error = e;
 		console.error('Completion handler error:', e);
+		return Response.json(
+			{
+				error: {
+					message: e.message,
+					type: 'invalid_request_error',
+					code: 'invalid_request',
+				},
+			},
+			{ status: 400 },
+		);
 	}
 
 	// If there is no header or it's not json, return an error

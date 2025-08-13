@@ -55,7 +55,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData
+				mockFormData,
 			);
 
 			mockEnv.AI.run.mockResolvedValue({
@@ -76,7 +76,7 @@ describe('Audio Routes', () => {
 				'@cf/openai/whisper-large-v3-turbo',
 				expect.objectContaining({
 					audio: expect.any(String), // Base64 string
-				})
+				}),
 			);
 		});
 
@@ -87,11 +87,11 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData
+				mockFormData,
 			);
 
 			const response = await transcriptionHandler(mockRequest, mockEnv);
-			
+
 			expect(response.status).toBe(400);
 		});
 
@@ -101,7 +101,7 @@ describe('Audio Routes', () => {
 			});
 
 			const response = await transcriptionHandler(mockRequest, mockEnv);
-			
+
 			expect(response.status).toBe(400);
 		});
 
@@ -115,7 +115,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData
+				mockFormData,
 			);
 
 			mockEnv.AI.run.mockResolvedValue({
@@ -145,7 +145,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData
+				mockFormData,
 			);
 
 			mockEnv.AI.run.mockResolvedValue({
@@ -194,7 +194,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData
+				mockFormData,
 			);
 
 			// Mock transcription response
@@ -229,7 +229,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData
+				mockFormData,
 			);
 
 			mockEnv.AI.run
@@ -259,7 +259,7 @@ describe('Audio Routes', () => {
 					model: 'tts-1',
 					input: 'Hello, world!',
 					voice: 'alloy',
-				}
+				},
 			);
 
 			const mockAudioData = new Uint8Array([1, 2, 3, 4]);
@@ -275,8 +275,8 @@ describe('Audio Routes', () => {
 				'@cf/myshell-ai/melotts',
 				expect.objectContaining({
 					prompt: 'Hello, world!',
-					lang: 'it', // alloy maps to Italian
-				})
+					lang: 'en', // alloy maps to English
+				}),
 			);
 		});
 
@@ -287,11 +287,11 @@ describe('Audio Routes', () => {
 				{
 					model: 'tts-1',
 					voice: 'alloy',
-				}
+				},
 			);
 
 			const response = await speechHandler(mockRequest, mockEnv);
-			
+
 			expect(response.status).toBe(400);
 		});
 
@@ -303,17 +303,17 @@ describe('Audio Routes', () => {
 					model: 'tts-1',
 					input: 'Hello, world!',
 					voice: 'invalid-voice',
-				}
+				},
 			);
 
 			const response = await speechHandler(mockRequest, mockEnv);
-			
+
 			expect(response.status).toBe(400);
 		});
 
 		it('should handle different voice mappings', async () => {
 			const voices = [
-				{ voice: 'alloy', lang: 'it' },
+				{ voice: 'alloy', lang: 'en' },
 				{ voice: 'echo', lang: 'fr' },
 				{ voice: 'fable', lang: 'en' },
 			];
@@ -326,7 +326,7 @@ describe('Audio Routes', () => {
 						model: 'tts-1',
 						input: 'Hello, world!',
 						voice,
-					}
+					},
 				);
 
 				mockEnv.AI.run.mockResolvedValue({
@@ -339,7 +339,7 @@ describe('Audio Routes', () => {
 					'@cf/myshell-ai/melotts',
 					expect.objectContaining({
 						lang,
-					})
+					}),
 				);
 			}
 		});

@@ -159,7 +159,6 @@ export function formatCompletion(response, model, prompt) {
 }
 
 export function formatEmbedding(embeddings, model, input) {
-	const timestamp = Math.floor(Date.now() / 1000);
 
 	const data = embeddings.map((embedding, index) => ({
 		object: 'embedding',
@@ -182,7 +181,7 @@ export function formatTranscription(response, format, options = {}) {
 	const { timestamp_granularities, words, segments } = options;
 
 	switch (format) {
-	case 'json':
+	case 'json': {
 		const jsonResponse = {
 			text: response.text || '',
 		};
@@ -200,6 +199,7 @@ export function formatTranscription(response, format, options = {}) {
 		}
 
 		return jsonResponse;
+	}
 
 	case 'verbose_json':
 		return {
@@ -214,7 +214,7 @@ export function formatTranscription(response, format, options = {}) {
 	case 'text':
 		return response.text || '';
 
-	case 'srt':
+	case 'srt': {
 		const srtSegments = segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
 		if (srtSegments.length > 0) {
 			let srtContent = '';
@@ -226,8 +226,9 @@ export function formatTranscription(response, format, options = {}) {
 			return srtContent;
 		}
 		return response.text || '';
+	}
 
-	case 'vtt':
+	case 'vtt': {
 		const vttSegments = segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
 		if (vttSegments.length > 0) {
 			let vttContent = 'WEBVTT\n\n';
@@ -239,6 +240,7 @@ export function formatTranscription(response, format, options = {}) {
 			return vttContent;
 		}
 		return response.text || '';
+	}
 
 	default:
 		return response.text || '';

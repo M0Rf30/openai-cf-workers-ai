@@ -1,16 +1,84 @@
 import { generateCacheKey, cacheResponse, getCachedResponse, shouldCache } from '../utils/cache.js';
+import { convertImageToDataURL } from '../utils/converters.js';
 import {
 	processFunctionMessages,
 	addFunctionContext,
 	parseFunctionCall,
 	formatFunctionCallResponse,
 } from '../utils/functionCalling.js';
-import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
+
+// Helper function to process messages with potential image content
+async function processMultimodalMessages(messages) {
+	return Promise.all(
+		messages.map(async message => {
+			// If content is a string, return as is
+			if (typeof message.content === 'string') {
+				return message;
+			}
+
+			const processItem = async item => {
+				if (item.type === 'text') {
+					return item;
+				}
+
+				if (item.type === 'image_url') {
+					if (typeof item.image_url?.url === 'string') {
+						// Handle data URLs directly
+						if (item.image_url.url.startsWith('data:')) {
+							return item;
+						}
+						// Handle HTTP/HTTPS URLs by fetching and converting to data URL
+						else if (item.image_url.url.startsWith('http')) {
+							try {
+								// Validate the URL before fetching
+								new URL(item.image_url.url);
+
+								const dataUrl = await convertImageToDataURL(item.image_url.url);
+								return {
+									type: 'image_url',
+									image_url: {
+										url: dataUrl,
+									},
+								};
+							} catch (error) {
+								console.error('Error fetching image URL:', error);
+								throw new Error('Image URL must be a data URI or a valid HTTP/HTTPS URL.');
+							}
+						}
+					}
+					throw new Error('Image URL must be a data URI or a valid HTTP/HTTPS URL.');
+				}
+				return item;
+			};
+
+			// If content is an array, process each item
+			if (Array.isArray(message.content)) {
+				const processedContent = await Promise.all(message.content.map(processItem));
+				return {
+					...message,
+					content: processedContent,
+				};
+			}
+
+			// Handle object content with type property
+			if (typeof message.content === 'object' && message.content !== null) {
+				const processedContent = await processItem(message.content);
+				return {
+					...message,
+					content: processedContent,
+				};
+			}
+
+			return message;
+		})
+	);
+}
 
 export const chatHandler = async (request, env) => {
 	let model = '@cf/meta/llama-4-scout-17b-16e-instruct'; // Default model
 	let messages = [];
-	let error = null;
+	const error = null;
 
 	// get the current time in epoch seconds
 	const created = Math.floor(Date.now() / 1000);
@@ -31,7 +99,7 @@ export const chatHandler = async (request, env) => {
 					model = json.model;
 				} else {
 					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
+						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
 					);
 				}
 			} else {
@@ -39,22 +107,19 @@ export const chatHandler = async (request, env) => {
 				model = DEFAULT_MODELS.chat;
 			}
 
-			if (json?.messages) {
-				if (Array.isArray(json.messages)) {
-					if (json.messages.length === 0) {
-						return Response.json(
-							{
-								error: {
-									message: 'no messages provided',
-									type: 'invalid_request_error',
-									code: 'invalid_request',
-								},
-							},
-							{ status: 400 },
-						);
-					}
-					messages = json.messages;
-				}
+			if (json?.messages && Array.isArray(json.messages) && json.messages.length > 0) {
+				messages = json.messages;
+			} else {
+				return Response.json(
+					{
+						error: {
+							message: 'messages are required and must be a non-empty array',
+							type: 'invalid_request_error',
+							code: 'invalid_request',
+						},
+					},
+					{ status: 400 }
+				);
 			}
 
 			if (!json?.stream) json.stream = false;
@@ -183,7 +248,7 @@ export const chatHandler = async (request, env) => {
 												{
 													delta: {
 														role: 'assistant',
-														content: data.response,
+														content: JSON.stringify(data),
 													},
 													index: 0,
 													finish_reason: null,
@@ -225,6 +290,7 @@ export const chatHandler = async (request, env) => {
 			});
 
 			// Prepare AI parameters
+			let processedMessages = messages;
 			const aiParams = {
 				stream: json.stream,
 				max_tokens: maxTokens,
@@ -233,11 +299,15 @@ export const chatHandler = async (request, env) => {
 			};
 
 			// Special handling for OpenAI OSS models that require 'input' instead of 'messages'
+			// Process messages for multimodal content
+			processedMessages = await processMultimodalMessages(messages);
+
 			if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
 				// For OSS models, we need to convert messages to a single input string
 				// This is a simple conversion - in a production environment, you might want more sophisticated formatting
 				let inputText = '';
-				for (const message of messages) {
+				for (const message of processedMessages) {
+					// Use processedMessages here
 					if (message.role === 'system') {
 						inputText += `[SYSTEM] ${message.content}\n`;
 					} else if (message.role === 'user') {
@@ -248,14 +318,12 @@ export const chatHandler = async (request, env) => {
 				}
 				aiParams.input = inputText.trim();
 			} else {
-				// Process messages for function calling
-				let processedMessages = messages;
+				// Handle function calling
 				if (tools) {
 					// Convert function calling messages to a format Cloudflare Workers AI understands
-					processedMessages = processFunctionMessages(messages, tools);
-					processedMessages = addFunctionContext(processedMessages, tools);
+					processedMessages = processFunctionMessages(processedMessages, tools); // Use processedMessages here
+					processedMessages = addFunctionContext(processedMessages, tools); // Use processedMessages here
 				}
-
 				aiParams.messages = processedMessages;
 			}
 
@@ -264,7 +332,7 @@ export const chatHandler = async (request, env) => {
 			let cacheKey = null;
 
 			if (env.CACHE_KV && shouldCache(aiParams) && !tools) {
-				cacheKey = generateCacheKey(model, processedMessages, aiParams);
+				cacheKey = await generateCacheKey(model, processedMessages, aiParams);
 				cachedResponse = await getCachedResponse(env.CACHE_KV, cacheKey);
 
 				if (cachedResponse) {
@@ -281,8 +349,9 @@ export const chatHandler = async (request, env) => {
 			const aiResp = await env.AI.run(model, aiParams);
 
 			// Log response info for debugging
-			if (!json.stream && aiResp.response) {
-				console.log('AI Response length:', aiResp.response.length);
+			console.log('AI Raw Response:', aiResp);
+			if (!json.stream && aiResp.result && aiResp.result.response) {
+				console.log('AI Response length:', aiResp.result.response.length);
 			}
 
 			// Piping the readableStream through the transformStream
@@ -296,7 +365,7 @@ export const chatHandler = async (request, env) => {
 				});
 			} else {
 				// Process the response for potential function calls
-				const { hasFunction, functionCall, content } = parseFunctionCall(aiResp.response);
+				const { hasFunction, functionCall, content } = parseFunctionCall(aiResp);
 
 				let response;
 				if (hasFunction && tools) {
@@ -332,7 +401,7 @@ export const chatHandler = async (request, env) => {
 								index: 0,
 								message: {
 									role: 'assistant',
-									content: aiResp.response,
+									content: aiResp.output && aiResp.output["1"] && aiResp.output["1"].content && aiResp.output["1"].content["0"] && aiResp.output["1"].content["0"].text,
 								},
 								finish_reason: 'stop',
 							},
@@ -348,7 +417,10 @@ export const chatHandler = async (request, env) => {
 				// Cache the response if caching is enabled (don't cache function calls)
 				if (env.CACHE_KV && cacheKey && shouldCache(aiParams) && !hasFunction) {
 					// Cache for 1 hour by default, can be configured
-					const cacheTtl = env.CACHE_TTL_SECONDS ? parseInt(env.CACHE_TTL_SECONDS) : 3600;
+					const cacheTtl =
+						env.CACHE_TTL_SECONDS && parseInt(env.CACHE_TTL_SECONDS) > 0
+							? parseInt(env.CACHE_TTL_SECONDS)
+							: 3600;
 					await cacheResponse(env.CACHE_KV, cacheKey, response, cacheTtl);
 				}
 
@@ -356,8 +428,17 @@ export const chatHandler = async (request, env) => {
 			}
 		}
 	} catch (e) {
-		error = e;
 		console.error('Chat handler error:', e);
+		return Response.json(
+			{
+				error: {
+					message: e.message,
+					type: 'invalid_request_error',
+					code: 'invalid_request',
+				},
+			},
+			{ status: 400 }
+		);
 	}
 
 	// if there is no header or it's not json, return an error
@@ -370,7 +451,7 @@ export const chatHandler = async (request, env) => {
 					code: 'invalid_request',
 				},
 			},
-			{ status: 400 },
+			{ status: 400 }
 		);
 	}
 
@@ -383,6 +464,6 @@ export const chatHandler = async (request, env) => {
 				code: 'invalid_request',
 			},
 		},
-		{ status: 400 },
+		{ status: 400 }
 	);
 };

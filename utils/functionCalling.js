@@ -4,7 +4,7 @@
  * @param {Array} tools - Available tools/functions
  * @returns {Array} Processed messages
  */
-export function processFunctionMessages(messages, tools = []) {
+export function processFunctionMessages(messages, _tools = []) {
 	const processedMessages = [];
 
 	for (let i = 0; i < messages.length; i++) {
@@ -122,7 +122,7 @@ export function parseFunctionCall(content) {
 				};
 			}
 		}
-	} catch (error) {
+	} catch {
 		// Not a function call, return as regular content
 	}
 

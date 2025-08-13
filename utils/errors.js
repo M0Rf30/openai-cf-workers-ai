@@ -116,10 +116,16 @@ export function validateString(value, fieldName, minLength = 0, maxLength = Infi
 		throw new ValidationError(`Parameter ${fieldName} must be a string`, fieldName);
 	}
 	if (value.length < minLength) {
-		throw new ValidationError(`Parameter ${fieldName} must be at least ${minLength} characters`, fieldName);
+		throw new ValidationError(
+			`Parameter ${fieldName} must be at least ${minLength} characters`,
+			fieldName,
+		);
 	}
 	if (value.length > maxLength) {
-		throw new ValidationError(`Parameter ${fieldName} must be at most ${maxLength} characters`, fieldName);
+		throw new ValidationError(
+			`Parameter ${fieldName} must be at most ${maxLength} characters`,
+			fieldName,
+		);
 	}
 	return value;
 }
@@ -143,10 +149,16 @@ export function validateArray(value, fieldName, minLength = 0, maxLength = Infin
 		throw new ValidationError(`Parameter ${fieldName} must be an array`, fieldName);
 	}
 	if (value.length < minLength) {
-		throw new ValidationError(`Parameter ${fieldName} must have at least ${minLength} items`, fieldName);
+		throw new ValidationError(
+			`Parameter ${fieldName} must have at least ${minLength} items`,
+			fieldName,
+		);
 	}
 	if (value.length > maxLength) {
-		throw new ValidationError(`Parameter ${fieldName} must have at most ${maxLength} items`, fieldName);
+		throw new ValidationError(
+			`Parameter ${fieldName} must have at most ${maxLength} items`,
+			fieldName,
+		);
 	}
 	return value;
 }
