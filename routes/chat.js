@@ -5,6 +5,7 @@ import {
 	parseFunctionCall,
 	formatFunctionCallResponse,
 } from '../utils/functionCalling.js';
+import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
 
 export const chatHandler = async (request, env) => {
 	let model = '@cf/meta/llama-4-scout-17b-16e-instruct'; // Default model
@@ -18,9 +19,7 @@ export const chatHandler = async (request, env) => {
 	try {
 		// If the POST data is JSON then attach it to our response.
 		if (request.headers.get('Content-Type') === 'application/json') {
-			let json = await request.json();
-
-			import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
+			const json = await request.json();
 
 			// Handle model selection - use real Cloudflare model names directly
 			if (json?.model) {
@@ -32,7 +31,7 @@ export const chatHandler = async (request, env) => {
 					model = json.model;
 				} else {
 					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
+						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
 					);
 				}
 			} else {
@@ -51,7 +50,7 @@ export const chatHandler = async (request, env) => {
 									code: 'invalid_request',
 								},
 							},
-							{ status: 400 }
+							{ status: 400 },
 						);
 					}
 					messages = json.messages;
@@ -355,7 +354,7 @@ export const chatHandler = async (request, env) => {
 					code: 'invalid_request',
 				},
 			},
-			{ status: 400 }
+			{ status: 400 },
 		);
 	}
 
@@ -368,6 +367,6 @@ export const chatHandler = async (request, env) => {
 				code: 'invalid_request',
 			},
 		},
-		{ status: 400 }
+		{ status: 400 },
 	);
 };

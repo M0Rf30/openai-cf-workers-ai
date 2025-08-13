@@ -155,7 +155,7 @@ export function validateEnum(value, fieldName, allowedValues) {
 	if (!allowedValues.includes(value)) {
 		throw new ValidationError(
 			`Parameter ${fieldName} must be one of: ${allowedValues.join(', ')}`,
-			fieldName
+			fieldName,
 		);
 	}
 	return value;
@@ -176,11 +176,11 @@ export function validateFile(file, fieldName = 'file') {
 
 export function validateAudioFile(file, fieldName = 'file', maxSize = 25 * 1024 * 1024) {
 	validateFile(file, fieldName);
-	
+
 	if (file.size > maxSize) {
 		throw new ValidationError(
 			`File ${fieldName} must be smaller than ${Math.round(maxSize / 1024 / 1024)}MB`,
-			fieldName
+			fieldName,
 		);
 	}
 
@@ -195,15 +195,15 @@ export function validateAudioFile(file, fieldName = 'file', maxSize = 25 * 1024 
 			'audio/flac',
 			'audio/x-wav',
 		];
-		
+
 		if (!supportedTypes.includes(file.type)) {
 			throw new ValidationError(
 				`File ${fieldName} must be an audio file. Supported formats: ${supportedTypes.join(', ')}`,
-				fieldName
+				fieldName,
 			);
 		}
 	}
-	
+
 	return file;
 }
 

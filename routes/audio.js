@@ -31,7 +31,7 @@ const VOICES = Object.keys(VOICE_MAPPING);
 // Utility function to validate model and convert to Cloudflare format
 function validateModel(type, modelName) {
 	// First try to map OpenAI model names to Cloudflare paths
-	let cloudflareModel = MODEL_MAPPING[modelName] || modelName;
+	const cloudflareModel = MODEL_MAPPING[modelName] || modelName;
 
 	if (!AVAILABLE_MODELS[type] || !AVAILABLE_MODELS[type].includes(cloudflareModel)) {
 		// Get available OpenAI-compatible model names for error message
@@ -42,7 +42,7 @@ function validateModel(type, modelName) {
 		const allAvailable = [...availableOpenAINames, ...AVAILABLE_MODELS[type]];
 
 		throw new Error(
-			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`
+			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`,
 		);
 	}
 	return cloudflareModel;
@@ -83,7 +83,7 @@ export const transcriptionHandler = async (request, env) => {
 						type: 'invalid_request_error',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -106,7 +106,7 @@ export const transcriptionHandler = async (request, env) => {
 						type: 'invalid_request_error',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -190,131 +190,131 @@ export const transcriptionHandler = async (request, env) => {
 
 		// Format response based on response_format
 		switch (response_format) {
-			case 'json':
-				// OpenAI compatible response format
-				const jsonResponse = {
-					text: transcriptionText,
-				};
+		case 'json':
+			// OpenAI compatible response format
+			const jsonResponse = {
+				text: transcriptionText,
+			};
 
-				// Add word-level timestamps if requested and available
-				if (timestamp_granularities === 'word' && words.length > 0) {
-					jsonResponse.words = words;
-				}
+			// Add word-level timestamps if requested and available
+			if (timestamp_granularities === 'word' && words.length > 0) {
+				jsonResponse.words = words;
+			}
 
-				// Add segments if available or create from words
-				if (timestamp_granularities === 'segment') {
-					if (segments.length > 0) {
-						jsonResponse.segments = segments;
-					} else if (words.length > 0) {
-						// Create basic segments from words (group by sentences or time chunks)
-						const createdSegments = [];
-						let currentSegment = {
-							id: 0,
-							start: words[0].start,
-							end: words[0].end,
-							text: '',
-						};
+			// Add segments if available or create from words
+			if (timestamp_granularities === 'segment') {
+				if (segments.length > 0) {
+					jsonResponse.segments = segments;
+				} else if (words.length > 0) {
+					// Create basic segments from words (group by sentences or time chunks)
+					const createdSegments = [];
+					let currentSegment = {
+						id: 0,
+						start: words[0].start,
+						end: words[0].end,
+						text: '',
+					};
 
-						words.forEach((wordData, index) => {
-							currentSegment.text += (currentSegment.text ? ' ' : '') + wordData.word;
-							currentSegment.end = wordData.end;
+					words.forEach((wordData, index) => {
+						currentSegment.text += (currentSegment.text ? ' ' : '') + wordData.word;
+						currentSegment.end = wordData.end;
 
-							// Create new segment on sentence end or every 10 words
-							if (
-								wordData.word.endsWith('.') ||
+						// Create new segment on sentence end or every 10 words
+						if (
+							wordData.word.endsWith('.') ||
 								wordData.word.endsWith('!') ||
 								wordData.word.endsWith('?') ||
 								index % 10 === 9 ||
 								index === words.length - 1
-							) {
-								createdSegments.push({ ...currentSegment });
-								if (index < words.length - 1) {
-									currentSegment = {
-										id: createdSegments.length,
-										start: words[index + 1].start,
-										end: words[index + 1].end,
-										text: '',
-									};
-								}
+						) {
+							createdSegments.push({ ...currentSegment });
+							if (index < words.length - 1) {
+								currentSegment = {
+									id: createdSegments.length,
+									start: words[index + 1].start,
+									end: words[index + 1].end,
+									text: '',
+								};
 							}
-						});
+						}
+					});
 
-						jsonResponse.segments = createdSegments;
-					}
+					jsonResponse.segments = createdSegments;
 				}
+			}
 
-				return Response.json(jsonResponse);
+			return Response.json(jsonResponse);
 
-			case 'text':
-				return new Response(transcriptionText, {
+		case 'text':
+			return new Response(transcriptionText, {
+				headers: { 'Content-Type': 'text/plain' },
+			});
+
+		case 'srt':
+			// Convert to SRT format using word timings or segments
+			const srtSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
+			if (srtSegments.length > 0) {
+				let srtContent = '';
+				srtSegments.forEach((segment, index) => {
+					const startTime = formatSRTTime(segment.start);
+					const endTime = formatSRTTime(segment.end);
+					srtContent += `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n\n`;
+				});
+				return new Response(srtContent, {
 					headers: { 'Content-Type': 'text/plain' },
 				});
+			}
+			return new Response(transcriptionText, {
+				headers: { 'Content-Type': 'text/plain' },
+			});
 
-			case 'srt':
-				// Convert to SRT format using word timings or segments
-				const srtSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
-				if (srtSegments.length > 0) {
-					let srtContent = '';
-					srtSegments.forEach((segment, index) => {
-						const startTime = formatSRTTime(segment.start);
-						const endTime = formatSRTTime(segment.end);
-						srtContent += `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n\n`;
-					});
-					return new Response(srtContent, {
-						headers: { 'Content-Type': 'text/plain' },
-					});
-				}
-				return new Response(transcriptionText, {
-					headers: { 'Content-Type': 'text/plain' },
+		case 'vtt':
+			// Use existing VTT output or create from segments/words
+			if (response.vtt) {
+				return new Response(response.vtt, {
+					headers: { 'Content-Type': 'text/vtt' },
 				});
-
-			case 'vtt':
-				// Use existing VTT output or create from segments/words
-				if (response.vtt) {
-					return new Response(response.vtt, {
+			} else {
+				const vttSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
+				if (vttSegments.length > 0) {
+					let vttContent = 'WEBVTT\n\n';
+					vttSegments.forEach(segment => {
+						const startTime = formatVTTTime(segment.start);
+						const endTime = formatVTTTime(segment.end);
+						vttContent += `${startTime} --> ${endTime}\n${segment.text}\n\n`;
+					});
+					return new Response(vttContent, {
 						headers: { 'Content-Type': 'text/vtt' },
 					});
-				} else {
-					const vttSegments = segments.length > 0 ? segments : createSegmentsFromWords(words);
-					if (vttSegments.length > 0) {
-						let vttContent = 'WEBVTT\n\n';
-						vttSegments.forEach(segment => {
-							const startTime = formatVTTTime(segment.start);
-							const endTime = formatVTTTime(segment.end);
-							vttContent += `${startTime} --> ${endTime}\n${segment.text}\n\n`;
-						});
-						return new Response(vttContent, {
-							headers: { 'Content-Type': 'text/vtt' },
-						});
-					}
 				}
-				return new Response(transcriptionText, {
-					headers: { 'Content-Type': 'text/plain' },
-				});
+			}
+			return new Response(transcriptionText, {
+				headers: { 'Content-Type': 'text/plain' },
+			});
 
-			case 'verbose_json':
-				// Return detailed response with all available information
-				const verboseResponse = {
-					task: 'transcribe',
-					language: response.language || 'en',
-					duration: response.duration || 0,
-					text: transcriptionText,
-				};
+		case 'verbose_json':
+			// Return detailed response with all available information
+			const verboseResponse = {
+				task: 'transcribe',
+				language: response.language || 'en',
+				duration: response.duration || 0,
+				text: transcriptionText,
+			};
 
-				if (words.length > 0) {
-					verboseResponse.words = words;
-				}
+			if (words.length > 0) {
+				verboseResponse.words = words;
+			}
 
-				if (segments.length > 0) {
-					verboseResponse.segments = segments;
-				}
+			if (segments.length > 0) {
+				verboseResponse.segments = segments;
+			}
 
-				return Response.json(verboseResponse);
+			return Response.json(verboseResponse);
 
-			default:
-				return Response.json({
-					text: transcriptionText,
-				});
+		default:
+			return Response.json({
+				text: transcriptionText,
+			});
 		}
 	} catch (error) {
 		console.error('Transcription Error:', error);
@@ -325,7 +325,7 @@ export const transcriptionHandler = async (request, env) => {
 					type: 'server_error',
 				},
 			},
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 };
@@ -381,7 +381,7 @@ export const translationHandler = async (request, env) => {
 						type: 'invalid_request_error',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -402,7 +402,7 @@ export const translationHandler = async (request, env) => {
 						type: 'invalid_request_error',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -469,27 +469,27 @@ export const translationHandler = async (request, env) => {
 
 		// Format response based on response_format
 		switch (response_format) {
-			case 'json':
-				return Response.json({
-					text: translatedText,
-					language: detectedLanguage,
-				});
+		case 'json':
+			return Response.json({
+				text: translatedText,
+				language: detectedLanguage,
+			});
 
-			case 'text':
-				return new Response(translatedText, {
-					headers: { 'Content-Type': 'text/plain' },
-				});
+		case 'text':
+			return new Response(translatedText, {
+				headers: { 'Content-Type': 'text/plain' },
+			});
 
-			case 'srt':
-			case 'vtt':
-				return new Response(translatedText, {
-					headers: { 'Content-Type': 'text/plain' },
-				});
+		case 'srt':
+		case 'vtt':
+			return new Response(translatedText, {
+				headers: { 'Content-Type': 'text/plain' },
+			});
 
-			default:
-				return Response.json({
-					text: translatedText,
-				});
+		default:
+			return Response.json({
+				text: translatedText,
+			});
 		}
 	} catch (error) {
 		console.error('Translation Error:', error);
@@ -500,7 +500,7 @@ export const translationHandler = async (request, env) => {
 					type: 'server_error',
 				},
 			},
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 };
@@ -522,7 +522,7 @@ export const speechHandler = async (request, env) => {
 						type: 'invalid_request_error',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -535,7 +535,7 @@ export const speechHandler = async (request, env) => {
 						type: 'invalid_request_error',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -554,13 +554,13 @@ export const speechHandler = async (request, env) => {
 
 		// Check if already cached in R2 (for large audio files)
 		let audioKey = null;
-		let shouldStoreInR2 = false;
+		const shouldStoreInR2 = false;
 
 		if (env.AUDIO_BUCKET) {
 			// Generate a cache key based on input parameters
 			const cacheKey = await crypto.subtle.digest(
 				'SHA-256',
-				new TextEncoder().encode(`${model}:${input}:${voice}:${response_format}`)
+				new TextEncoder().encode(`${model}:${input}:${voice}:${response_format}`),
 			);
 			const cacheKeyHex = Array.from(new Uint8Array(cacheKey))
 				.map(b => b.toString(16).padStart(2, '0'))
@@ -602,24 +602,24 @@ export const speechHandler = async (request, env) => {
 		// Note: MeloTTS only supports MP3 output format
 		// Other formats would require conversion
 		switch (response_format) {
-			case 'mp3':
-				contentType = 'audio/mpeg';
-				filename = 'speech.mp3';
-				break;
-			case 'opus':
-			case 'aac':
-			case 'flac':
-			case 'wav':
-			case 'pcm':
-				// MeloTTS only supports MP3, so we return MP3 regardless
-				// In a production system, you might want to add audio conversion here
-				contentType = 'audio/mpeg';
-				filename = 'speech.mp3';
-				console.warn(`Format ${response_format} not supported by MeloTTS, returning MP3`);
-				break;
-			default:
-				contentType = 'audio/mpeg';
-				filename = 'speech.mp3';
+		case 'mp3':
+			contentType = 'audio/mpeg';
+			filename = 'speech.mp3';
+			break;
+		case 'opus':
+		case 'aac':
+		case 'flac':
+		case 'wav':
+		case 'pcm':
+			// MeloTTS only supports MP3, so we return MP3 regardless
+			// In a production system, you might want to add audio conversion here
+			contentType = 'audio/mpeg';
+			filename = 'speech.mp3';
+			console.warn(`Format ${response_format} not supported by MeloTTS, returning MP3`);
+			break;
+		default:
+			contentType = 'audio/mpeg';
+			filename = 'speech.mp3';
 		}
 
 		// Store large audio files in R2 if bucket is available
@@ -659,7 +659,7 @@ export const speechHandler = async (request, env) => {
 					type: 'server_error',
 				},
 			},
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 };

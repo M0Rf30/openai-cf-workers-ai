@@ -43,7 +43,7 @@ export const storeDocumentHandler = async (request, env) => {
 					type: 'processing_error',
 				},
 			},
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 };
@@ -86,7 +86,7 @@ export const ragSearchHandler = async (request, env) => {
 					type: 'search_error',
 				},
 			},
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 };
@@ -172,7 +172,7 @@ Sources: ${ragResult.sources.length} relevant documents found.`,
 					type: 'rag_chat_error',
 				},
 			},
-			{ status: 500 }
+			{ status: 500 },
 		);
 	}
 };

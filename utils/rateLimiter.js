@@ -60,7 +60,7 @@ export class RateLimiter {
 							'X-RateLimit-Remaining': '0',
 							'X-RateLimit-Reset': Math.ceil(resetTime / 1000).toString(),
 						},
-					}
+					},
 				);
 			}
 
@@ -86,7 +86,7 @@ export class RateLimiter {
 						'X-RateLimit-Remaining': (limit - validRequests.length).toString(),
 						'X-RateLimit-Reset': Math.ceil((windowStart + windowMs) / 1000).toString(),
 					},
-				}
+				},
 			);
 		} catch (error) {
 			console.error('Rate limiting error:', error);

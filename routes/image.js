@@ -1,16 +1,17 @@
 import { uint8ArrayToBase64 } from '../utils/converters';
 import { uuidv4 } from '../utils/uuid';
 import { streamToBuffer } from '../utils/stream';
+import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
 
 export const imageGenerationHandler = async (request, env) => {
 	let model = '@cf/black-forest-labs/flux-1-schnell'; // Default model
 	let format = 'url';
 	let error = null;
-	let created = Math.floor(Date.now() / 1000);
+	const created = Math.floor(Date.now() / 1000);
 
 	try {
 		if (request.headers.get('Content-Type') === 'application/json') {
-			let json = await request.json();
+			const json = await request.json();
 
 			if (!json?.prompt) {
 				throw new Error('no prompt provided');
@@ -23,8 +24,6 @@ export const imageGenerationHandler = async (request, env) => {
 				}
 			}
 
-			import { MODEL_CATEGORIES, MODEL_MAPPING, DEFAULT_MODELS } from '../utils/models.js';
-
 			// Handle model selection - use real Cloudflare model names directly
 			if (json?.model) {
 				// Use supported Cloudflare models from unified configuration
@@ -35,7 +34,7 @@ export const imageGenerationHandler = async (request, env) => {
 					model = json.model;
 				} else {
 					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
+						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
 					);
 				}
 			} else {
@@ -82,7 +81,7 @@ export const imageGenerationHandler = async (request, env) => {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-					}
+					},
 				);
 			} else {
 				// Check if R2 bucket is available
@@ -104,7 +103,7 @@ export const imageGenerationHandler = async (request, env) => {
 							headers: {
 								'Content-Type': 'application/json',
 							},
-						}
+						},
 					);
 				}
 
@@ -129,7 +128,7 @@ export const imageGenerationHandler = async (request, env) => {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-					}
+					},
 				);
 			}
 		}
@@ -153,7 +152,7 @@ export const imageGenerationHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 
@@ -171,7 +170,7 @@ export const imageGenerationHandler = async (request, env) => {
 			headers: {
 				'Content-Type': 'application/json',
 			},
-		}
+		},
 	);
 };
 
@@ -193,7 +192,7 @@ export const getImageHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 
@@ -213,7 +212,7 @@ export const getImageHandler = async (request, env) => {
 					headers: {
 						'Content-Type': 'application/json',
 					},
-				}
+				},
 			);
 		}
 
@@ -238,7 +237,7 @@ export const getImageHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 };

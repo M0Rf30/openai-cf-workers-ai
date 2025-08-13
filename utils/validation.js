@@ -46,23 +46,23 @@ export const MODEL_MAPPING = {
 	'gpt-3.5-turbo-16k': '@cf/meta/llama-2-7b-chat-fp16',
 	'gpt-4': '@cf/mistral/mistral-7b-instruct-v0.1',
 	'gpt-4-turbo': '@cf/mistral/mistral-7b-instruct-v0.1',
-	
+
 	// Completion models
 	'gpt-3.5-turbo-instruct': '@cf/meta/llama-2-7b-chat-int8',
 	'text-davinci-003': '@cf/meta/llama-2-7b-chat-int8',
 	'text-davinci-002': '@cf/meta/llama-2-7b-chat-int8',
-	
+
 	// Embedding models
 	'text-embedding-ada-002': '@cf/baai/bge-base-en-v1.5',
 	'text-embedding-3-small': '@cf/baai/bge-small-en-v1.5',
 	'text-embedding-3-large': '@cf/baai/bge-large-en-v1.5',
-	
+
 	// STT models
 	'whisper-1': '@cf/openai/whisper',
 	'whisper': '@cf/openai/whisper',
 	'whisper-tiny-en': '@cf/openai/whisper-tiny-en',
 	'whisper-large-v3-turbo': '@cf/openai/whisper-large-v3-turbo',
-	
+
 	// TTS models
 	'tts-1': '@cf/myshell-ai/melotts',
 	'tts-1-hd': '@cf/myshell-ai/melotts',
@@ -91,10 +91,10 @@ export const RESPONSE_FORMATS = {
 export function validateModel(type, modelName) {
 	validateRequired(modelName, 'model');
 	validateString(modelName, 'model');
-	
+
 	// Try to map OpenAI model names to Cloudflare paths
 	const cloudflareModel = MODEL_MAPPING[modelName] || modelName;
-	
+
 	if (!AVAILABLE_MODELS[type] || !AVAILABLE_MODELS[type].includes(cloudflareModel)) {
 		// Get available OpenAI-compatible model names for error message
 		const availableOpenAINames = Object.keys(MODEL_MAPPING).filter(key => {
@@ -102,13 +102,13 @@ export function validateModel(type, modelName) {
 			return AVAILABLE_MODELS[type]?.includes(cfModel);
 		});
 		const allAvailable = [...availableOpenAINames, ...(AVAILABLE_MODELS[type] || [])];
-		
+
 		throw new ValidationError(
 			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`,
-			'model'
+			'model',
 		);
 	}
-	
+
 	return cloudflareModel;
 }
 
@@ -132,17 +132,17 @@ export function validateChatCompletionRequest(body) {
 	// Required parameters
 	validateRequired(model, 'model');
 	validateRequired(messages, 'messages');
-	
+
 	// Validate model
 	const validatedModel = validateModel('chat', model);
-	
+
 	// Validate messages
 	validateArray(messages, 'messages', 1);
 	messages.forEach((message, index) => {
 		if (!message.role || !message.content) {
 			throw new ValidationError(
 				`Message at index ${index} must have 'role' and 'content' properties`,
-				'messages'
+				'messages',
 			);
 		}
 		validateEnum(message.role, `messages[${index}].role`, ['system', 'user', 'assistant']);
@@ -151,27 +151,27 @@ export function validateChatCompletionRequest(body) {
 
 	// Optional parameter validation
 	const validated = { model: validatedModel, messages };
-	
+
 	if (max_tokens !== undefined) {
 		validated.max_tokens = validateNumber(max_tokens, 'max_tokens', 1, 4096);
 	}
-	
+
 	if (temperature !== undefined) {
 		validated.temperature = validateNumber(temperature, 'temperature', 0, 2);
 	}
-	
+
 	if (top_p !== undefined) {
 		validated.top_p = validateNumber(top_p, 'top_p', 0, 1);
 	}
-	
+
 	if (n !== undefined) {
 		validated.n = validateNumber(n, 'n', 1, 128);
 	}
-	
+
 	if (stream !== undefined) {
 		validated.stream = Boolean(stream);
 	}
-	
+
 	if (stop !== undefined) {
 		if (typeof stop === 'string') {
 			validated.stop = [stop];
@@ -182,15 +182,15 @@ export function validateChatCompletionRequest(body) {
 			throw new ValidationError('Parameter stop must be a string or array', 'stop');
 		}
 	}
-	
+
 	if (presence_penalty !== undefined) {
 		validated.presence_penalty = validateNumber(presence_penalty, 'presence_penalty', -2, 2);
 	}
-	
+
 	if (frequency_penalty !== undefined) {
 		validated.frequency_penalty = validateNumber(frequency_penalty, 'frequency_penalty', -2, 2);
 	}
-	
+
 	if (user !== undefined) {
 		validated.user = validateString(user, 'user', 0, 256);
 	}
@@ -203,7 +203,7 @@ export function validateEmbeddingRequest(body) {
 	const { input, model, encoding_format, dimensions, user } = body;
 
 	validateRequired(input, 'input');
-	
+
 	// Validate input
 	let inputs;
 	if (typeof input === 'string') {
@@ -221,7 +221,7 @@ export function validateEmbeddingRequest(body) {
 
 	// Validate model
 	const validatedModel = model ? validateModel('embedding', model) : AVAILABLE_MODELS.embedding[0];
-	
+
 	const validated = {
 		input: inputs,
 		model: validatedModel,
@@ -230,11 +230,11 @@ export function validateEmbeddingRequest(body) {
 	if (encoding_format !== undefined) {
 		validated.encoding_format = validateEnum(encoding_format, 'encoding_format', ['float', 'base64']);
 	}
-	
+
 	if (dimensions !== undefined) {
 		validated.dimensions = validateNumber(dimensions, 'dimensions', 1, 3072);
 	}
-	
+
 	if (user !== undefined) {
 		validated.user = validateString(user, 'user', 0, 256);
 	}
@@ -265,28 +265,28 @@ export function validateTranscriptionRequest(formData) {
 	if (prompt) {
 		validated.prompt = validateString(prompt, 'prompt', 0, 244);
 	}
-	
+
 	if (response_format) {
 		validated.response_format = validateEnum(
-			response_format, 
-			'response_format', 
-			RESPONSE_FORMATS.transcription
+			response_format,
+			'response_format',
+			RESPONSE_FORMATS.transcription,
 		);
 	}
-	
+
 	if (temperature) {
 		validated.temperature = validateNumber(parseFloat(temperature), 'temperature', 0, 1);
 	}
-	
+
 	if (language) {
 		validated.language = validateString(language, 'language', 2, 2); // ISO 639-1 code
 	}
-	
+
 	if (timestamp_granularities) {
 		validated.timestamp_granularities = validateEnum(
 			timestamp_granularities,
 			'timestamp_granularities',
-			['word', 'segment']
+			['word', 'segment'],
 		);
 	}
 
@@ -314,15 +314,15 @@ export function validateTranslationRequest(formData) {
 	if (prompt) {
 		validated.prompt = validateString(prompt, 'prompt', 0, 244);
 	}
-	
+
 	if (response_format) {
 		validated.response_format = validateEnum(
 			response_format,
-			'response_format', 
-			RESPONSE_FORMATS.translation
+			'response_format',
+			RESPONSE_FORMATS.translation,
 		);
 	}
-	
+
 	if (temperature) {
 		validated.temperature = validateNumber(parseFloat(temperature), 'temperature', 0, 1);
 	}
@@ -337,7 +337,7 @@ export function validateSpeechRequest(body) {
 	// Required parameters
 	validateRequired(model, 'model');
 	validateRequired(input, 'input');
-	
+
 	const validatedModel = validateModel('tts', model);
 	const validatedInput = validateString(input, 'input', 1, 4096);
 	const validatedVoice = voice ? validateEnum(voice, 'voice', AVAILABLE_VOICES) : 'alloy';
@@ -353,10 +353,10 @@ export function validateSpeechRequest(body) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.tts
+			RESPONSE_FORMATS.tts,
 		);
 	}
-	
+
 	if (speed !== undefined) {
 		validated.speed = validateNumber(speed, 'speed', 0.25, 4.0);
 	}
@@ -388,9 +388,9 @@ export function validateCompletionRequest(body) {
 	// Required parameters
 	validateRequired(model, 'model');
 	validateRequired(prompt, 'prompt');
-	
+
 	const validatedModel = validateModel('completion', model);
-	
+
 	let validatedPrompt;
 	if (typeof prompt === 'string') {
 		validatedPrompt = validateString(prompt, 'prompt');
@@ -409,31 +409,31 @@ export function validateCompletionRequest(body) {
 	if (max_tokens !== undefined) {
 		validated.max_tokens = validateNumber(max_tokens, 'max_tokens', 1, 4096);
 	}
-	
+
 	if (temperature !== undefined) {
 		validated.temperature = validateNumber(temperature, 'temperature', 0, 2);
 	}
-	
+
 	if (top_p !== undefined) {
 		validated.top_p = validateNumber(top_p, 'top_p', 0, 1);
 	}
-	
+
 	if (n !== undefined) {
 		validated.n = validateNumber(n, 'n', 1, 128);
 	}
-	
+
 	if (stream !== undefined) {
 		validated.stream = Boolean(stream);
 	}
-	
+
 	if (logprobs !== undefined) {
 		validated.logprobs = validateNumber(logprobs, 'logprobs', 0, 5);
 	}
-	
+
 	if (echo !== undefined) {
 		validated.echo = Boolean(echo);
 	}
-	
+
 	if (stop !== undefined) {
 		if (typeof stop === 'string') {
 			validated.stop = [stop];
@@ -444,23 +444,23 @@ export function validateCompletionRequest(body) {
 			throw new ValidationError('Parameter stop must be a string or array', 'stop');
 		}
 	}
-	
+
 	if (presence_penalty !== undefined) {
 		validated.presence_penalty = validateNumber(presence_penalty, 'presence_penalty', -2, 2);
 	}
-	
+
 	if (frequency_penalty !== undefined) {
 		validated.frequency_penalty = validateNumber(frequency_penalty, 'frequency_penalty', -2, 2);
 	}
-	
+
 	if (best_of !== undefined) {
 		validated.best_of = validateNumber(best_of, 'best_of', 1, 20);
 	}
-	
+
 	if (user !== undefined) {
 		validated.user = validateString(user, 'user', 0, 256);
 	}
-	
+
 	if (suffix !== undefined) {
 		validated.suffix = validateString(suffix, 'suffix', 0, 40);
 	}

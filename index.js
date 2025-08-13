@@ -29,21 +29,21 @@ function extractToken(authorizationHeader) {
 	return null;
 }
 
-// MIDDLEWARE: Rate limiting
-const rateLimit = async (request, env) => {
-	// Configure rate limits based on endpoint
-	let limit = 100; // Default requests per hour
-	let windowMs = 3600000; // 1 hour in milliseconds
+// MIDDLEWARE: Rate limiting (DISABLED)
+// const rateLimit = async (request, env) => {
+// 	// Configure rate limits based on endpoint
+// 	let limit = 100; // Default requests per hour
+// 	let windowMs = 3600000; // 1 hour in milliseconds
 
-	const url = new URL(request.url);
-	if (url.pathname.includes('/chat/') || url.pathname.includes('/completions')) {
-		limit = 50; // More restrictive for AI endpoints
-	} else if (url.pathname.includes('/images/')) {
-		limit = 20; // Even more restrictive for image generation
-	}
+// 	const url = new URL(request.url);
+// 	if (url.pathname.includes('/chat/') || url.pathname.includes('/completions')) {
+// 		limit = 50; // More restrictive for AI endpoints
+// 	} else if (url.pathname.includes('/images/')) {
+// 		limit = 20; // Even more restrictive for image generation
+// 	}
 
-	return rateLimitMiddleware(request, env, limit, windowMs);
-};
+// 	return rateLimitMiddleware(request, env, limit, windowMs);
+// };
 
 // MIDDLEWARE: withAuthenticatedUser - embeds user in Request or returns a 401
 const bearerAuthentication = (request, env) => {
@@ -58,7 +58,7 @@ const bearerAuthentication = (request, env) => {
 };
 
 router
-	.all('*', rateLimit)
+	// .all('*', rateLimit) // Rate limiting disabled
 	.all('*', bearerAuthentication)
 	.post('/chat/completions', chatHandler)
 	.post('/completions', completionHandler)

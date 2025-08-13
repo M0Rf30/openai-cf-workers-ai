@@ -37,7 +37,7 @@ export const embeddingsHandler = async (request, env) => {
 				{
 					error: `Model "${json.model}" not supported. Available models: ${SUPPORTED_MODELS.join(', ')}`,
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -48,7 +48,7 @@ export const embeddingsHandler = async (request, env) => {
 
 		// Prepare input text
 		let inputText = json.input;
-		let isArray = Array.isArray(inputText);
+		const isArray = Array.isArray(inputText);
 
 		// Ensure input is in the correct format
 		if (typeof inputText === 'string') {
@@ -56,7 +56,7 @@ export const embeddingsHandler = async (request, env) => {
 		} else if (!Array.isArray(inputText)) {
 			return Response.json(
 				{ error: 'Input must be a string or array of strings' },
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 
@@ -75,7 +75,7 @@ export const embeddingsHandler = async (request, env) => {
 			if (typeof text !== 'string' || text.trim().length === 0) {
 				return Response.json(
 					{ error: 'All input items must be non-empty strings' },
-					{ status: 400 }
+					{ status: 400 },
 				);
 			}
 		}
@@ -83,7 +83,7 @@ export const embeddingsHandler = async (request, env) => {
 		// Call Cloudflare Workers AI
 		const embeddings = await env.AI.run(model, {
 			text: inputText,
-			pooling: pooling,
+			pooling,
 		});
 
 		// Optional: Store embeddings in Vectorize if configured and metadata provided
@@ -115,13 +115,13 @@ export const embeddingsHandler = async (request, env) => {
 		// Format response to match OpenAI API structure
 		const data = embeddings.data.map((embedding, index) => ({
 			object: 'embedding',
-			embedding: embedding,
-			index: index,
+			embedding,
+			index,
 		}));
 
 		return Response.json({
 			object: 'list',
-			data: data,
+			data,
 			model: json.model || model,
 			usage: {
 				prompt_tokens: totalTokens,
@@ -136,7 +136,7 @@ export const embeddingsHandler = async (request, env) => {
 		if (e.message?.includes('rate limit')) {
 			return Response.json(
 				{ error: 'Rate limit exceeded. Please try again later.' },
-				{ status: 429 }
+				{ status: 429 },
 			);
 		}
 
