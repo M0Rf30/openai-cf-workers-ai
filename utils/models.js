@@ -1,6 +1,112 @@
 // Unified models configuration for Cloudflare Workers AI
-// This file contains all supported models organized by category
+// This file contains all supported models organized by category with context windows
 
+// === CONTEXT WINDOW MAPPING ===
+export const MODEL_CONTEXT_WINDOWS = {
+	// === Meta Llama Models ===
+	'@cf/meta/llama-4-scout-17b-16e-instruct': 131072, // Initially supports 131k tokens (expandable to 10M)
+	'@cf/meta/llama-3.3-70b-instruct-fp8-fast': 128000, // 128k tokens
+	'@cf/meta/llama-3.1-70b-instruct': 128000, // 128k tokens
+	'@cf/meta/llama-3.1-8b-instruct': 128000, // 128k tokens
+	'@cf/meta/llama-3.1-8b-instruct-fast': 128000, // 128k tokens
+	'@cf/meta/llama-3.1-8b-instruct-fp8': 128000, // 128k tokens
+	'@cf/meta/llama-3.1-8b-instruct-awq': 128000, // 128k tokens
+	'@cf/meta/llama-3-8b-instruct': 8192, // 8k tokens (original Llama 3)
+	'@cf/meta/llama-3-8b-instruct-awq': 8192, // 8k tokens
+	'@cf/meta/llama-3.2-1b-instruct': 60000, // 60k tokens
+	'@cf/meta/llama-3.2-3b-instruct': 128000, // 128k tokens
+	'@cf/meta/llama-3.2-11b-vision-instruct': 128000, // 128k tokens
+	'@cf/meta/llama-guard-3-8b': 8192, // Based on Llama 3.1 8B
+	'@cf/meta/llama-2-7b-chat-fp16': 4096, // 4k tokens
+	'@cf/meta/llama-2-7b-chat-int8': 4096, // 4k tokens
+	'@cf/meta-llama/llama-2-7b-chat-hf-lora': 4096, // 4k tokens
+	'@cf/meta-llama/meta-llama-3-8b-instruct': 8192, // 8k tokens
+
+	// === Mistral Models ===
+	'@cf/mistralai/mistral-small-3.1-24b-instruct': 128000, // 128k tokens
+	'@cf/mistral/mistral-7b-instruct-v0.1': 8192, // 8k tokens (v0.1)
+	'@cf/mistral/mistral-7b-instruct-v0.2': 32768, // 32k tokens (v0.2)
+	'@cf/mistral/mistral-7b-instruct-v0.2-lora': 32768, // 32k tokens
+
+	// === Google Gemma Models ===
+	'@cf/google/gemma-3-12b-it': 128000, // 128k tokens
+	'@cf/google/gemma-7b-it': 8192, // 8k tokens
+	'@cf/google/gemma-7b-it-lora': 8192, // 8k tokens
+	'@cf/google/gemma-2b-it-lora': 8192, // 8k tokens
+
+	// === Qwen Models ===
+	'@cf/qwen/qwq-32b': 32768, // 32k tokens (reasoning model)
+	'@cf/qwen/qwen2.5-coder-32b-instruct': 32768, // 32k tokens (coder model)
+	'@cf/qwen/qwen1.5-14b-chat-awq': 32768, // 32k tokens
+	'@cf/qwen/qwen1.5-7b-chat-awq': 32768, // 32k tokens
+	'@cf/qwen/qwen1.5-1.8b-chat': 32768, // 32k tokens
+	'@cf/qwen/qwen1.5-0.5b-chat': 32768, // 32k tokens
+
+	// === DeepSeek Models ===
+	'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': 32768, // 32k tokens
+	'@cf/deepseek-ai/deepseek-math-7b-instruct': 4096, // 4k tokens
+
+	// === Other Text Generation Models ===
+	'@cf/tinyllama/tinyllama-1.1b-chat-v1.0': 2048, // 2k tokens
+	'@cf/fblgit/una-cybertron-7b-v2-bf16': 8192, // 8k tokens
+	'@cf/microsoft/phi-2': 2048, // 2k tokens
+	'@cf/openchat/openchat-3.5-0106': 8192, // 8k tokens
+	'@cf/tiiuae/falcon-7b-instruct': 2048, // 2k tokens
+	'@cf/thebloke/discolm-german-7b-v1-awq': 8192, // 8k tokens
+	'@cf/unum/uform-gen2-qwen-500m': 2048, // 2k tokens
+	'@cf/defog/sqlcoder-7b-2': 8192, // 8k tokens
+	'@cf/openai/gpt-oss-120b': 8192, // 8k tokens
+	'@cf/openai/gpt-oss-20b': 8192, // 8k tokens
+	'@cf/facebook/bart-large-cnn': 1024, // 1k tokens
+
+	// === HuggingFace Models ===
+	'@hf/nexusflow/starling-lm-7b-beta': 8192, // 8k tokens
+	'@hf/thebloke/llamaguard-7b-awq': 4096, // 4k tokens
+	'@hf/thebloke/neural-chat-7b-v3-1-awq': 8192, // 8k tokens
+	'@hf/mistral/mistral-7b-instruct-v0.2': 32768, // 32k tokens
+	'@hf/thebloke/mistral-7b-instruct-v0.1-awq': 8192, // 8k tokens
+	'@hf/thebloke/llama-2-13b-chat-awq': 4096, // 4k tokens
+	'@hf/thebloke/deepseek-coder-6.7b-base-awq': 4096, // 4k tokens
+	'@hf/thebloke/openhermes-2.5-mistral-7b-awq': 8192, // 8k tokens
+	'@hf/thebloke/deepseek-coder-6.7b-instruct-awq': 4096, // 4k tokens
+	'@hf/nousresearch/hermes-2-pro-mistral-7b': 8192, // 8k tokens
+	'@hf/thebloke/zephyr-7b-beta-awq': 8192, // 8k tokens
+	'@hf/google/gemma-7b-it': 8192, // 8k tokens
+
+	// === Embedding Models (Input Context) ===
+	'@cf/baai/bge-base-en-v1.5': 512, // 512 tokens input
+	'@cf/baai/bge-small-en-v1.5': 512, // 512 tokens input
+	'@cf/baai/bge-large-en-v1.5': 512, // 512 tokens input
+	'@cf/baai/bge-reranker-base': 512, // 512 tokens input
+	'@cf/baai/bge-m3': 8192, // 8k tokens input
+
+	// === Audio Models ===
+	'@cf/openai/whisper': 30, // 30 seconds of audio (not tokens)
+	'@cf/openai/whisper-tiny-en': 30, // 30 seconds of audio
+	'@cf/openai/whisper-large-v3-turbo': 30, // 30 seconds of audio
+	'@cf/myshell-ai/melotts': 4000, // ~4k characters of text input
+	'@cf/meta/m2m100-1.2b': 1024, // 1k tokens
+
+	// === Vision Models ===
+	'@cf/llava-hf/llava-1.5-7b-hf': 4096, // 4k tokens + image
+
+	// === Classification Models ===
+	'@cf/huggingface/distilbert-sst-2-int8': 512, // 512 tokens
+	'@cf/microsoft/resnet-50': 1, // Single image
+
+	// === Image Generation Models ===
+	'@cf/black-forest-labs/flux-1-schnell': 77, // 77 tokens prompt limit
+	'@cf/bytedance/stable-diffusion-xl-lightning': 77, // 77 tokens prompt limit
+	'@cf/runwayml/stable-diffusion-v1-5-img2img': 77, // 77 tokens prompt limit
+	'@cf/runwayml/stable-diffusion-v1-5-inpainting': 77, // 77 tokens prompt limit
+	'@cf/stabilityai/stable-diffusion-xl-base-1.0': 77, // 77 tokens prompt limit
+	'@cf/lykon/dreamshaper-8-lcm': 77, // 77 tokens prompt limit
+
+	// === Object Detection Models ===
+	'@cf/facebook/detr-resnet-50': 1, // Single image
+};
+
+// === ORIGINAL MODEL CATEGORIES ===
 export const MODEL_CATEGORIES = {
 	chat: [
 		'@cf/qwen/qwen1.5-0.5b-chat',
@@ -313,6 +419,8 @@ export const DEFAULT_MODELS = {
 	rag: '@cf/baai/bge-large-en-v1.5', // Best embedding model for RAG applications
 };
 
+// === INTEGRATED HELPER FUNCTIONS ===
+
 // Helper function to get all models
 export const getAllModels = () => {
 	const allModels = new Set();
@@ -332,4 +440,116 @@ export const getModelsByCapability = capability => {
 // Helper function to check if model exists
 export const isValidModel = modelName => {
 	return Object.keys(MODEL_CAPABILITIES).includes(modelName);
+};
+
+// **UPDATED: Context window function using the mapping**
+export const getModelContextWindow = modelName => {
+	const contextWindow = MODEL_CONTEXT_WINDOWS[modelName];
+	if (!contextWindow) {
+		console.warn(`Context window not found for model: ${modelName}. Using default 4096.`);
+		return 4096; // Default fallback
+	}
+	return contextWindow;
+};
+
+// Helper function to validate if a model has context window info
+export const isModelSupported = modelName => {
+	return modelName in MODEL_CONTEXT_WINDOWS;
+};
+
+// Helper function to calculate a sensible max_tokens default for a model
+export const calculateDefaultMaxTokens = (modelName, reservePercentage = 10) => {
+	const contextWindow = getModelContextWindow(modelName);
+	// Reserve a percentage of the context window for the prompt and safety buffer
+	const reserveTokens = Math.floor(contextWindow * (reservePercentage / 100));
+	// Return a reasonable default max_tokens value (at least 100 tokens, no more than 90% of context)
+	const maxTokens = Math.max(100, contextWindow - reserveTokens);
+	return maxTokens > 0 ? maxTokens : 1024; // Ensure we always return a positive number
+};
+
+// Helper function to get all models with context windows above a threshold
+export const getModelsWithContextAbove = threshold => {
+	return Object.entries(MODEL_CONTEXT_WINDOWS)
+		.filter(([model, contextWindow]) => contextWindow >= threshold)
+		.map(([model]) => model);
+};
+
+// Helper function to get models grouped by context window size
+export const getModelsByContextWindow = () => {
+	const grouped = {};
+	Object.entries(MODEL_CONTEXT_WINDOWS).forEach(([model, contextWindow]) => {
+		if (!grouped[contextWindow]) {
+			grouped[contextWindow] = [];
+		}
+		grouped[contextWindow].push(model);
+	});
+	return grouped;
+};
+
+// Context window statistics
+export const getContextWindowStats = () => {
+	const windows = Object.values(MODEL_CONTEXT_WINDOWS);
+	return {
+		total_models: windows.length,
+		min_context: Math.min(...windows),
+		max_context: Math.max(...windows),
+		average_context: Math.round(windows.reduce((a, b) => a + b, 0) / windows.length),
+		models_with_128k_plus: windows.filter(w => w >= 128000).length,
+		models_with_32k_plus: windows.filter(w => w >= 32768).length,
+		models_with_8k_plus: windows.filter(w => w >= 8192).length,
+		models_with_large_context: getModelsWithContextAbove(128000),
+		models_with_medium_context: getModelsWithContextAbove(32768).filter(
+			m => MODEL_CONTEXT_WINDOWS[m] < 128000
+		),
+	};
+};
+
+// Helper to get optimal model for context size requirement
+export const getOptimalModelForContext = (
+	requiredContext,
+	category = 'chat',
+	capabilities = []
+) => {
+	const categoryModels = MODEL_CATEGORIES[category] || [];
+
+	const suitableModels = categoryModels.filter(model => {
+		const contextWindow = MODEL_CONTEXT_WINDOWS[model];
+		const modelCapabilities = MODEL_CAPABILITIES[model] || [];
+
+		// Check context window requirement
+		if (contextWindow < requiredContext) return false;
+
+		// Check capability requirements
+		if (capabilities.length > 0) {
+			return capabilities.some(cap => modelCapabilities.includes(cap));
+		}
+
+		return true;
+	});
+
+	// Sort by context window (smallest that meets requirements first for efficiency)
+	return suitableModels.sort((a, b) => MODEL_CONTEXT_WINDOWS[a] - MODEL_CONTEXT_WINDOWS[b]);
+};
+
+// Model recommendation based on use case
+export const getModelRecommendation = useCase => {
+	const recommendations = {
+		'long-context': getModelsWithContextAbove(128000),
+		'coding': getModelsByCapability('code-generation'),
+		'vision': getModelsByCapability('vision'),
+		'reasoning': getModelsByCapability('reasoning'),
+		'multilingual': ['@cf/baai/bge-m3', '@cf/meta/llama-3.2-11b-vision-instruct'],
+		'fast-inference': [
+			'@cf/meta/llama-3.2-1b-instruct',
+			'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
+			'@cf/qwen/qwen1.5-0.5b-chat',
+		],
+		'balanced': [
+			'@cf/meta/llama-3.1-8b-instruct-fp8',
+			'@cf/meta/llama-3-8b-instruct',
+			'@cf/google/gemma-7b-it',
+		],
+	};
+
+	return recommendations[useCase] || [];
 };

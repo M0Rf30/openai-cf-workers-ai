@@ -1,5 +1,7 @@
 import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
 
+import { MODEL_CONTEXT_WINDOWS, calculateDefaultMaxTokens } from '../utils/models.js';
+
 export const completionHandler = async (request, env) => {
 	let model = '@cf/mistral/mistral-7b-instruct-v0.1'; // Default model
 	const error = null;
@@ -29,7 +31,7 @@ export const completionHandler = async (request, env) => {
 					// If still not in supported list, throw error
 					if (!supportedModels.includes(model)) {
 						throw new Error(
-							`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
+							`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
 						);
 					}
 				}
@@ -50,7 +52,7 @@ export const completionHandler = async (request, env) => {
 									code: 'invalid_request',
 								},
 							},
-							{ status: 400 },
+							{ status: 400 }
 						);
 					}
 				} else {
@@ -62,7 +64,7 @@ export const completionHandler = async (request, env) => {
 								code: 'invalid_request',
 							},
 						},
-						{ status: 400 },
+						{ status: 400 }
 					);
 				}
 			} else {
@@ -74,7 +76,7 @@ export const completionHandler = async (request, env) => {
 							code: 'invalid_request',
 						},
 					},
-					{ status: 400 },
+					{ status: 400 }
 				);
 			}
 
@@ -82,12 +84,17 @@ export const completionHandler = async (request, env) => {
 			if (!json?.stream) json.stream = false;
 
 			// Handle max_tokens parameter with reasonable defaults and limits
-			let maxTokens = 4096; // Default reasonable limit
-			if (json?.max_tokens) {
-				if (typeof json.max_tokens === 'number' && json.max_tokens > 0) {
-					// Set reasonable bounds: minimum 1, maximum 4096 (adjust based on your needs)
-					maxTokens = Math.max(1, Math.min(json.max_tokens, 4096));
-				}
+			// Use the context window of the specified model to determine max tokens
+			const contextWindow = MODEL_CONTEXT_WINDOWS[model] || 4096;
+
+			// Calculate maxTokens based on the model's context window
+			let maxTokens;
+			if (typeof json.max_tokens === 'number' && json.max_tokens > 0) {
+				// Use provided value if it's a valid number (clamped to context window)
+				maxTokens = Math.max(1, Math.min(json.max_tokens, contextWindow));
+			} else {
+				// Use our helper function to calculate a sensible default
+				maxTokens = calculateDefaultMaxTokens(model);
 			}
 
 			// Handle other generation parameters
@@ -250,7 +257,7 @@ export const completionHandler = async (request, env) => {
 					code: 'invalid_request',
 				},
 			},
-			{ status: 400 },
+			{ status: 400 }
 		);
 	}
 
@@ -264,7 +271,7 @@ export const completionHandler = async (request, env) => {
 					code: 'invalid_request',
 				},
 			},
-			{ status: 400 },
+			{ status: 400 }
 		);
 	}
 
@@ -277,6 +284,6 @@ export const completionHandler = async (request, env) => {
 				code: 'invalid_request',
 			},
 		},
-		{ status: 400 },
+		{ status: 400 }
 	);
 };

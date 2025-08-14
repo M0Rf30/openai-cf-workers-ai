@@ -35,8 +35,8 @@ describe('STT Transcription Handler', () => {
 		expect(response.status).toBe(200);
 		expect(jsonResponse.text).toBe('Hello, this is a test of text to speech.');
 		expect(mockEnv.AI.run).toHaveBeenCalledTimes(1);
-		expect(mockEnv.AI.run).toHaveBeenCalledWith('@cf/openai/whisper', {
-			audio: expect.any(Array),
+		expect(mockEnv.AI.run).toHaveBeenCalledWith('@cf/openai/whisper-large-v3-turbo', {
+			audio: 'bW9jayBhdWRpbyBkYXRh',
 		});
 	});
 });

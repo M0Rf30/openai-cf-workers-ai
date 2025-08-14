@@ -6,7 +6,12 @@ import {
 	parseFunctionCall,
 	formatFunctionCallResponse,
 } from '../utils/functionCalling.js';
-import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
+import {
+	MODEL_CATEGORIES,
+	DEFAULT_MODELS,
+	MODEL_CONTEXT_WINDOWS,
+	calculateDefaultMaxTokens,
+} from '../utils/models.js';
 
 // Helper function to process messages with potential image content
 async function processMultimodalMessages(messages) {
@@ -124,14 +129,25 @@ export const chatHandler = async (request, env) => {
 
 			if (!json?.stream) json.stream = false;
 
+			// Get model configuration and context window
+			const context_window = MODEL_CONTEXT_WINDOWS[model];
+
+			const prompt_tokens = 0; // Placeholder for actual token counting
+
 			// Handle max_tokens parameter with reasonable defaults and limits
-			let maxTokens = 4096; // Default reasonable limit
-			if (json?.max_tokens) {
-				if (typeof json.max_tokens === 'number' && json.max_tokens > 0) {
-					// Set reasonable bounds: minimum 1, maximum 4096 (adjust based on your needs)
-					maxTokens = Math.max(1, Math.min(json.max_tokens, 4096));
-				}
+			// Always use a numeric value (never undefined or null) for max_tokens
+			let max_tokens = 1024; // Fallback default
+
+			// If max_tokens is specified in the request and is a valid number, use it
+			if (typeof json.max_tokens === 'number' && json.max_tokens > 0) {
+				max_tokens = Math.min(json.max_tokens, context_window); // Don't exceed context window
+			} else {
+				// Otherwise calculate a default based on model's context window
+				max_tokens = Math.floor(context_window * 0.7); // Use 70% of context window by default
 			}
+
+			// Ensure max_tokens is at least 10 tokens
+			max_tokens = Math.max(10, max_tokens);
 
 			// Handle other generation parameters
 			const temperature =
@@ -175,7 +191,7 @@ export const chatHandler = async (request, env) => {
 			// Log parameters for debugging
 			console.log('AI Parameters:', {
 				model,
-				maxTokens,
+				max_tokens,
 				temperature,
 				topP,
 				messageCount: messages.length,
@@ -293,10 +309,18 @@ export const chatHandler = async (request, env) => {
 			let processedMessages = messages;
 			const aiParams = {
 				stream: json.stream,
-				max_tokens: maxTokens,
+				max_tokens,
 				temperature,
-				top_p: topP,
+				topP,
 			};
+
+			// Log the parameters we're passing to ensure they're correct
+			console.log('AI Parameters being sent:', {
+				model,
+				max_tokens: aiParams.max_tokens,
+				temperature: aiParams.temperature,
+				topP: aiParams.topP,
+			});
 
 			// Special handling for OpenAI OSS models that require 'input' instead of 'messages'
 			// Process messages for multimodal content
@@ -345,8 +369,20 @@ export const chatHandler = async (request, env) => {
 				}
 			}
 
-			// Run the AI model with configured parameters
-			const aiResp = await env.AI.run(model, aiParams);
+			// Clone the aiParams to ensure we don't modify the original object
+			let finalParams = { ...aiParams };
+
+			// The Cloudflare backend expects max_tokens to be a valid integer value
+			// This is the key fix to address the "Type mismatch of '/max_tokens', 'integer' not in 'null'" error
+			if (finalParams.max_tokens === undefined || finalParams.max_tokens === null) {
+				// Default to a reasonable value based on model context window
+				finalParams.max_tokens = Math.floor(context_window * 0.7);
+			}
+
+			// Log the final parameters before running the AI model
+			console.log('Running AI model with:', { model, finalParams });
+			// Run the AI model with validated parameters
+			const aiResp = await env.AI.run(model, finalParams);
 
 			// Log response info for debugging
 			console.log('AI Raw Response:', aiResp);
@@ -401,7 +437,12 @@ export const chatHandler = async (request, env) => {
 								index: 0,
 								message: {
 									role: 'assistant',
-									content: aiResp.output && aiResp.output["1"] && aiResp.output["1"].content && aiResp.output["1"].content["0"] && aiResp.output["1"].content["0"].text,
+									content:
+										aiResp.output &&
+										aiResp.output['1'] &&
+										aiResp.output['1'].content &&
+										aiResp.output['1'].content['0'] &&
+										aiResp.output['1'].content['0'].text,
 								},
 								finish_reason: 'stop',
 							},
