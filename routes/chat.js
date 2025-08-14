@@ -11,6 +11,7 @@ import {
 	DEFAULT_MODELS,
 	MODEL_CONTEXT_WINDOWS,
 	calculateDefaultMaxTokens,
+	MODEL_CAPABILITIES,
 } from '../utils/models.js';
 
 // Helper function to process messages with potential image content
@@ -322,16 +323,36 @@ export const chatHandler = async (request, env) => {
 				topP: aiParams.topP,
 			});
 
-			// Special handling for OpenAI OSS models that require 'input' instead of 'messages'
-			// Process messages for multimodal content
-			processedMessages = await processMultimodalMessages(messages);
+			// Store original messages before any processing that might be skipped
+			const originalMessages = [...messages];
 
+			// Process messages for multimodal content
+			processedMessages = await processMultimodalMessages(originalMessages);
+
+			// Determine if the model supports function calling
+			const modelSupportsFunctionCalling = MODEL_CAPABILITIES[model]?.includes('function-calling');
+
+			// Handle function calling logic
+			if (tools) {
+				if (modelSupportsFunctionCalling) {
+					// Convert function calling messages to a format Cloudflare Workers AI understands
+					processedMessages = processFunctionMessages(processedMessages, tools);
+					processedMessages = addFunctionContext(processedMessages, tools);
+				} else {
+					// If tools are provided but the model doesn't support function calling,
+					// remove tools and toolChoice from parameters and revert messages
+					console.warn(`Model ${model} does not support function calling. Ignoring tools.`);
+					tools = null;
+					toolChoice = null;
+					// Revert processedMessages to original (multimodal processed) state
+					processedMessages = await processMultimodalMessages(originalMessages);
+				}
+			}
+
+			// Special handling for OpenAI OSS models that require 'input' instead of 'messages'
 			if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
-				// For OSS models, we need to convert messages to a single input string
-				// This is a simple conversion - in a production environment, you might want more sophisticated formatting
 				let inputText = '';
 				for (const message of processedMessages) {
-					// Use processedMessages here
 					if (message.role === 'system') {
 						inputText += `[SYSTEM] ${message.content}\n`;
 					} else if (message.role === 'user') {
@@ -341,14 +362,16 @@ export const chatHandler = async (request, env) => {
 					}
 				}
 				aiParams.input = inputText.trim();
+				// Ensure tools and toolChoice are not sent for OSS models if they were previously set
+				delete aiParams.tools;
+				delete aiParams.tool_choice;
 			} else {
-				// Handle function calling
-				if (tools) {
-					// Convert function calling messages to a format Cloudflare Workers AI understands
-					processedMessages = processFunctionMessages(processedMessages, tools); // Use processedMessages here
-					processedMessages = addFunctionContext(processedMessages, tools); // Use processedMessages here
-				}
 				aiParams.messages = processedMessages;
+				// Add tools and toolChoice to aiParams only if they are still valid
+				if (tools) {
+					aiParams.tools = tools;
+					aiParams.tool_choice = toolChoice;
+				}
 			}
 
 			// Check cache for non-streaming requests (don't cache function calls)
@@ -381,6 +404,7 @@ export const chatHandler = async (request, env) => {
 
 			// Log the final parameters before running the AI model
 			console.log('Running AI model with:', { model, finalParams });
+			console.log('Final AI parameters (JSON):', JSON.stringify(finalParams, null, 2));
 			// Run the AI model with validated parameters
 			const aiResp = await env.AI.run(model, finalParams);
 
@@ -437,12 +461,7 @@ export const chatHandler = async (request, env) => {
 								index: 0,
 								message: {
 									role: 'assistant',
-									content:
-										aiResp.output &&
-										aiResp.output['1'] &&
-										aiResp.output['1'].content &&
-										aiResp.output['1'].content['0'] &&
-										aiResp.output['1'].content['0'].text,
+									content: content,
 								},
 								finish_reason: 'stop',
 							},

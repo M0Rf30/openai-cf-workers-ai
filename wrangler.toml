@@ -1,4 +1,4 @@
-name = "ai"                # todo
+name = "ai"                       # todo
 main = "index.js"
 compatibility_date = "2024-05-06"
 

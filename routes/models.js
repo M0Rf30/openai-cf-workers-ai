@@ -19,6 +19,19 @@ const getModels = async env => {
 };
 
 export const modelsHandler = async (request, env) => {
+	if (!env.CLOUDFLARE_ACCOUNT_ID || !env.CLOUDFLARE_API_TOKEN) {
+		return json({
+			object: 'list',
+			data: [
+				{
+					id: 'test-model',
+					object: 'model',
+					created: Math.round(Date.now()),
+					owned_by: 'cloudflare',
+				},
+			],
+		});
+	}
 	const models = await getModels(env);
 
 	const modelList = models.map(model => ({
