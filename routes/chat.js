@@ -84,7 +84,6 @@ async function processMultimodalMessages(messages) {
 export const chatHandler = async (request, env) => {
 	let model = '@cf/meta/llama-4-scout-17b-16e-instruct'; // Default model
 	let messages = [];
-	const error = null;
 
 	// get the current time in epoch seconds
 	const created = Math.floor(Date.now() / 1000);
@@ -254,6 +253,36 @@ export const chatHandler = async (request, env) => {
 
 								const data = JSON.parse(content);
 								if (data.response) {
+									// Debug OSS model streaming responses
+									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+										console.log('[OSS Model Stream] Response chunk type:', typeof data.response);
+										if (typeof data.response === 'object') {
+											console.log(
+												'[OSS Model Stream] Response chunk keys:',
+												Object.keys(data.response)
+											);
+										}
+									}
+
+									// For OSS models, extract the actual text response instead of JSONifying the whole data object
+									// The response field contains the actual text content we need to send to the client
+									const actualContent =
+										typeof data.response === 'string'
+											? data.response
+											: data.response?.text ||
+												data.response?.content ||
+												JSON.stringify(data.response);
+
+									// Log a sample of what we're sending back
+									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+										console.log(
+											'[OSS Model Stream] Extracted content:',
+											actualContent.length > 50
+												? actualContent.substring(0, 50) + '...'
+												: actualContent
+										);
+									}
+
 									const newChunk =
 										'data: ' +
 										JSON.stringify({
@@ -265,7 +294,7 @@ export const chatHandler = async (request, env) => {
 												{
 													delta: {
 														role: 'assistant',
-														content: JSON.stringify(data),
+														content: actualContent,
 													},
 													index: 0,
 													finish_reason: null,
@@ -345,7 +374,7 @@ export const chatHandler = async (request, env) => {
 					tools = null;
 					toolChoice = null;
 					// Revert processedMessages to original (multimodal processed) state
-					processedMessages = await processMultimodalMessages(originalMessages);
+					processedMessages = await processMultimodalMessages(originalMessages, model);
 				}
 			}
 
@@ -414,6 +443,51 @@ export const chatHandler = async (request, env) => {
 				console.log('AI Response length:', aiResp.result.response.length);
 			}
 
+			// Process OSS model responses specifically (they have a different format)
+			let processedResp = aiResp;
+			if (
+				!json.stream &&
+				(model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b')
+			) {
+				// For OSS models in non-streaming mode, we need to extract the response content
+				console.log('[OSS Model] Processing non-streaming response for', model);
+				console.log('[OSS Model] Raw response structure:', JSON.stringify(Object.keys(aiResp)));
+
+				if (typeof aiResp === 'object' && aiResp.result?.response) {
+					console.log('[OSS Model] Response type:', typeof aiResp.result.response);
+					console.log(
+						'[OSS Model] Response keys:',
+						typeof aiResp.result.response === 'object'
+							? Object.keys(aiResp.result.response)
+							: 'N/A (not an object)'
+					);
+
+					const responseContent =
+						typeof aiResp.result.response === 'string'
+							? aiResp.result.response
+							: aiResp.result.response?.text ||
+								aiResp.result.response?.content ||
+								JSON.stringify(aiResp.result.response);
+
+					// Create a format that parseFunctionCall can handle
+					processedResp = responseContent;
+					console.log(
+						'[OSS Model] Processed response (truncated):',
+						typeof processedResp === 'string'
+							? processedResp.length > 100
+								? processedResp.substring(0, 100) + '...'
+								: processedResp
+							: 'Not a string'
+					);
+				} else {
+					console.warn('[OSS Model] Unable to extract response content from OSS model response');
+					console.log(
+						'[OSS Model] Response structure:',
+						JSON.stringify(aiResp, null, 2).substring(0, 500) + '...'
+					);
+				}
+			}
+
 			// Piping the readableStream through the transformStream
 			if (json.stream) {
 				return new Response(aiResp.pipeThrough(transformer), {
@@ -425,7 +499,7 @@ export const chatHandler = async (request, env) => {
 				});
 			} else {
 				// Process the response for potential function calls
-				const { hasFunction, functionCall, content } = parseFunctionCall(aiResp);
+				const { hasFunction, functionCall, content } = parseFunctionCall(processedResp);
 
 				let response;
 				if (hasFunction && tools) {
@@ -486,6 +560,18 @@ export const chatHandler = async (request, env) => {
 
 				return Response.json(response);
 			}
+		} else {
+			// if there is no header or it's not json, return an error
+			return Response.json(
+				{
+					error: {
+						message: 'Invalid request. Content-Type must be application/json',
+						type: 'invalid_request_error',
+						code: 'invalid_request',
+					},
+				},
+				{ status: 400 }
+			);
 		}
 	} catch (e) {
 		console.error('Chat handler error:', e);
@@ -500,30 +586,4 @@ export const chatHandler = async (request, env) => {
 			{ status: 400 }
 		);
 	}
-
-	// if there is no header or it's not json, return an error
-	if (error) {
-		return Response.json(
-			{
-				error: {
-					message: error.message,
-					type: 'invalid_request_error',
-					code: 'invalid_request',
-				},
-			},
-			{ status: 400 }
-		);
-	}
-
-	// if we get here, return a 400 error
-	return Response.json(
-		{
-			error: {
-				message: 'Invalid request. Content-Type must be application/json',
-				type: 'invalid_request_error',
-				code: 'invalid_request',
-			},
-		},
-		{ status: 400 }
-	);
 };

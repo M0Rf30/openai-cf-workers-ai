@@ -5,7 +5,7 @@
 export const MODEL_CONTEXT_WINDOWS = {
 	// === Meta Llama Models ===
 	'@cf/meta/llama-4-scout-17b-16e-instruct': 131072, // Initially supports 131k tokens (expandable to 10M)
-	'@cf/meta/llama-3.3-70b-instruct-fp8-fast': 128000, // 128k tokens
+	'@cf/meta/llama-3.3-70b-instruct-fp8-fast': 24000, // 24k tokens (corrected based on API error)
 	'@cf/meta/llama-3.1-70b-instruct': 128000, // 128k tokens
 	'@cf/meta/llama-3.1-8b-instruct': 128000, // 128k tokens
 	'@cf/meta/llama-3.1-8b-instruct-fast': 128000, // 128k tokens
