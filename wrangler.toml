@@ -1,0 +1,48 @@
+name = "ai"
+main = "index.js"
+compatibility_date = "2024-05-06"
+
+[ai]
+binding = "AI" # i.e. available in your Worker on env.AI
+
+# KV namespace for caching responses
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "your-kv-namespace-id"                 # Replace with your actual KV namespace ID
+preview_id = "your-preview-kv-namespace-id" # Replace with your preview KV namespace ID
+
+# Durable Objects for rate limiting
+# [[durable_objects.bindings]]
+# name = "RATE_LIMITER"
+# class_name = "DistributedRateLimiter"
+
+# [[migrations]]
+# tag = "v1"
+# new_classes = [ "DistributedRateLimiter" ]
+
+# R2 bucket for large file storage (audio, images, etc.)
+# Uncomment these when R2 is enabled on your account
+# [[r2_buckets]]
+# binding = "AUDIO_BUCKET"
+# bucket_name = "openai-cf-audio"
+# preview_bucket_name = "ai-audio-preview"
+
+# [[r2_buckets]]
+# binding = "IMAGE_BUCKET"
+# bucket_name = "openai-cf-images"
+# preview_bucket_name = "ai-images-preview"
+
+# Vectorize index for embeddings and RAG
+[[vectorize]]
+binding = "VECTOR_INDEX"
+index_name = "openai-cf-embeddings"
+
+[vars]
+ACCESS_TOKEN = "your-access-token"        # replace with your own.
+CLOUDFLARE_ACCOUNT_ID = "your-account-id" # replace with your own.
+CACHE_TTL_SECONDS = "3600"                # Cache TTL in seconds (1 hour)
+# MODEL_MAPPER = { "gpt-3.5-turbo" = "@cf/meta/llama-2-7b-chat-int8" } # Optional
+
+[observability]
+enabled = true
+head_sampling_rate = 1

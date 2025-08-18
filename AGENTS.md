@@ -1,0 +1,53 @@
+# Agent Guidelines for openai-cf-workers-ai
+
+This document outlines the conventions and commands for agentic coding in this repository. Agents operating within this codebase **must** adhere to these guidelines to ensure consistency, maintainability, and successful task completion.
+
+## Build, Lint, and Test Commands
+
+- **Install Dependencies:** `npm install`
+- **Run All Tests:** `npm test` or `vitest run`
+- **Run Unit Tests:** `npm run test:unit`
+- **Run Integration Tests:** `npm run test:integration`
+- **Run a Single Test File:** `vitest run <path/to/test_file.test.js>`
+- **Lint Code:** `npm run lint`
+- **Fix Linting Issues:** `npm run lint:fix`
+- **Format Code:** `npm run format`
+- **Validate (Lint & Unit Tests):** `npm run validate`
+
+## Code Style Guidelines
+
+- **Indentation:** Tabs (tab width 2 spaces).
+- **Quotes:** Single quotes.
+- **Semicolons:** Always use semicolons.
+- **Trailing Commas:** Use trailing commas for multi-line object and array literals (ES5 style).
+- **Line Length:** Max 120 characters.
+- **Variable Declaration:** Prefer `const` and `let` over `var`.
+- **Unused Variables:** Avoid unused variables; variables starting with `_` are ignored.
+- **Error Handling:** Follow existing patterns in `utils/errors.js`.
+- **Naming Conventions:** Adhere to existing camelCase for variables and functions.
+- **Imports:** Use consistent import styles as seen in `routes/` and `utils/` files.
+- **Function Comments:** Add JSDoc comments for exported functions with parameters and return types.
+- **Type Checking:** Use JSDoc for type annotations where needed.
+
+## Model Management
+
+- **Model Context Windows:** Refer to `utils/models.js` for context window information.
+- **Model Categories:** Models are organized by capabilities in `utils/models.js`.
+- **Model Mappings:** OpenAI-compatible model names are mapped in `utils/models.js`.
+
+## Testing Guidelines
+
+- **Unit Tests:** Located in `tests/unit/` with corresponding `.test.js` files.
+- **Integration Tests:** Located in `tests/integration/`.
+- **Test Fixtures:** Use files in `tests/fixtures/` for test data.
+- **Test Scripts:** Use scripts in `scripts/` for running specific test scenarios.
+
+## API Routes
+
+- **Route Handlers:** Each route has its own file in `routes/`.
+- **Utilities:** Shared functionality is in `utils/`.
+- **Validation:** Input validation is handled in `utils/validation.js`.
+
+## Cursor/Copilot Rules
+
+No specific Cursor or Copilot instruction files were found in this repository.
