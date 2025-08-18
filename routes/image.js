@@ -34,7 +34,7 @@ export const imageGenerationHandler = async (request, env) => {
 					model = json.model;
 				} else {
 					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
+						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
 					);
 				}
 			} else {
@@ -81,7 +81,7 @@ export const imageGenerationHandler = async (request, env) => {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-					}
+					},
 				);
 			} else {
 				// Check if R2 bucket is available
@@ -103,7 +103,7 @@ export const imageGenerationHandler = async (request, env) => {
 							headers: {
 								'Content-Type': 'application/json',
 							},
-						}
+						},
 					);
 				}
 
@@ -128,7 +128,7 @@ export const imageGenerationHandler = async (request, env) => {
 						headers: {
 							'Content-Type': 'application/json',
 						},
-					}
+					},
 				);
 			}
 		}
@@ -147,7 +147,7 @@ export const imageGenerationHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 
@@ -166,7 +166,7 @@ export const imageGenerationHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 
@@ -184,7 +184,7 @@ export const imageGenerationHandler = async (request, env) => {
 			headers: {
 				'Content-Type': 'application/json',
 			},
-		}
+		},
 	);
 };
 
@@ -206,7 +206,7 @@ export const getImageHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 
@@ -226,7 +226,7 @@ export const getImageHandler = async (request, env) => {
 					headers: {
 						'Content-Type': 'application/json',
 					},
-				}
+				},
 			);
 		}
 
@@ -251,7 +251,7 @@ export const getImageHandler = async (request, env) => {
 				headers: {
 					'Content-Type': 'application/json',
 				},
-			}
+			},
 		);
 	}
 };

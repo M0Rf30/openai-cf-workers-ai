@@ -10,7 +10,7 @@ export async function checkRateLimit(
 	rateLimiterBinding,
 	identifier,
 	limit = 100,
-	windowMs = 3600000
+	windowMs = 3600000,
 ) {
 	// Use a stable ID for the rate limiter based on identifier
 	const rateLimiterId = rateLimiterBinding.idFromName(identifier);
@@ -78,7 +78,7 @@ export async function rateLimitMiddleware(request, env, limit = 100, windowMs = 
 					'X-RateLimit-Remaining': result.remaining.toString(),
 					'X-RateLimit-Reset': Math.ceil(result.resetTime / 1000).toString(),
 				},
-			}
+			},
 		);
 	}
 

@@ -77,7 +77,7 @@ async function processMultimodalMessages(messages) {
 			}
 
 			return message;
-		})
+		}),
 	);
 }
 
@@ -104,7 +104,7 @@ export const chatHandler = async (request, env) => {
 					model = json.model;
 				} else {
 					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`
+						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
 					);
 				}
 			} else {
@@ -123,7 +123,7 @@ export const chatHandler = async (request, env) => {
 							code: 'invalid_request',
 						},
 					},
-					{ status: 400 }
+					{ status: 400 },
 				);
 			}
 
@@ -272,7 +272,7 @@ export const chatHandler = async (request, env) => {
 										if (typeof data.response === 'object' && data.response !== null) {
 											console.log(
 												'[OSS Model Stream] Response chunk keys:',
-												Object.keys(data.response)
+												Object.keys(data.response),
 											);
 										}
 									}
@@ -292,7 +292,7 @@ export const chatHandler = async (request, env) => {
 											'[OSS Model Stream] Extracted content:',
 											actualContent.length > 50
 												? actualContent.substring(0, 50) + '...'
-												: actualContent
+												: actualContent,
 										);
 									}
 
@@ -473,7 +473,7 @@ export const chatHandler = async (request, env) => {
 					if (Array.isArray(aiResp.output)) {
 						// Find the message object with type 'message' and role 'assistant'
 						const assistantMessage = aiResp.output.find(
-							msg => msg.type === 'message' && msg.role === 'assistant'
+							msg => msg.type === 'message' && msg.role === 'assistant',
 						);
 
 						if (assistantMessage && Array.isArray(assistantMessage.content)) {
@@ -551,7 +551,7 @@ export const chatHandler = async (request, env) => {
 						if (Array.isArray(processedResp.output)) {
 							// Look for output_text type objects in the output array
 							const outputTextItems = processedResp.output.filter(
-								item => item.type === 'output_text'
+								item => item.type === 'output_text',
 							);
 							if (outputTextItems.length > 0) {
 								// Extract text from output_text items
@@ -633,7 +633,7 @@ export const chatHandler = async (request, env) => {
 						code: 'invalid_request',
 					},
 				},
-				{ status: 400 }
+				{ status: 400 },
 			);
 		}
 	} catch (e) {
@@ -646,7 +646,7 @@ export const chatHandler = async (request, env) => {
 					code: 'invalid_request',
 				},
 			},
-			{ status: 400 }
+			{ status: 400 },
 		);
 	}
 };

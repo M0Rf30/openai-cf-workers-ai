@@ -15,6 +15,13 @@
 		"test:watch": "vitest",
 		"test:unit": "vitest run tests/unit",
 		"test:integration": "chmod +x tests/integration/*.sh && tests/integration/test_api.sh",
+		"test:all": "chmod +x scripts/*.sh && scripts/test_all.sh",
+		"test:audio": "chmod +x scripts/*.sh && scripts/test_audio.sh",
+		"test:completions": "chmod +x scripts/*.sh && scripts/test_completions.sh",
+		"test:embeddings": "chmod +x scripts/*.sh && scripts/test_embeddings.sh",
+		"test:images": "chmod +x scripts/*.sh && scripts/test_images.sh",
+		"test:models": "chmod +x scripts/*.sh && scripts/test_models.sh",
+		"test:rag": "chmod +x scripts/*.sh && scripts/test_rag.sh",
 		"test:coverage": "vitest run --coverage",
 		"lint": "eslint *.js routes/**/*.js utils/**/*.js",
 		"lint:fix": "eslint --fix *.js routes/**/*.js utils/**/*.js",
@@ -41,6 +48,6 @@
 		"eslint": "^9.0.0",
 		"prettier": "^3.0.0",
 		"vitest": "^3.2.4",
-		"wrangler": "^4.29.1"
+		"wrangler": "^4.30.0"
 	}
 }

@@ -100,7 +100,7 @@ export function validateModel(type, modelName) {
 
 		throw new ValidationError(
 			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`,
-			'model'
+			'model',
 		);
 	}
 
@@ -136,7 +136,7 @@ export function validateChatCompletionRequest(body) {
 		if (!message.role || !message.content) {
 			throw new ValidationError(
 				`Message at index ${index} must have 'role' and 'content' properties`,
-				'messages'
+				'messages',
 			);
 		}
 		validateEnum(message.role, `messages[${index}].role`, ['system', 'user', 'assistant']);
@@ -267,7 +267,7 @@ export function validateTranscriptionRequest(formData) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.transcription
+			RESPONSE_FORMATS.transcription,
 		);
 	}
 
@@ -283,7 +283,7 @@ export function validateTranscriptionRequest(formData) {
 		validated.timestamp_granularities = validateEnum(
 			timestamp_granularities,
 			'timestamp_granularities',
-			['word', 'segment']
+			['word', 'segment'],
 		);
 	}
 
@@ -316,7 +316,7 @@ export function validateTranslationRequest(formData) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.translation
+			RESPONSE_FORMATS.translation,
 		);
 	}
 
@@ -350,7 +350,7 @@ export function validateSpeechRequest(body) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.tts
+			RESPONSE_FORMATS.tts,
 		);
 	}
 

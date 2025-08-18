@@ -255,24 +255,24 @@ npm run test
 npm run test:integration
 ```
 
-### Run Tests with Coverage
+### Individual Endpoint Tests
+
+The project includes simple test scripts for each API endpoint:
 
 ```bash
-npm run test:coverage
+# Run all tests
+npm run test:all
+
+# Run specific endpoint tests
+npm run test:audio      # Audio endpoints (transcription, translation, TTS)
+npm run test:completions # Chat completions
+npm run test:embeddings  # Embeddings
+npm run test:images      # Image generation
+npm run test:models      # Models endpoint
+npm run test:rag         # RAG endpoints
 ```
 
-### Manual Testing
-
-Use the provided test scripts in `tests/integration/` to test against your deployed worker:
-
-```bash
-# Set your worker URL and token
-export WORKER_URL="https://your-worker.workers.dev/v1"
-export AUTH_TOKEN="your-token"
-
-# Run comprehensive API tests
-./tests/integration/test_api.sh
-```
+Test scripts are located in the `scripts/` directory with a flat structure.
 
 ## 🔍 Development
 

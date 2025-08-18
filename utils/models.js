@@ -313,7 +313,7 @@ export const MODEL_MAPPING = {
 
 // Reverse mapping for API responses
 export const REVERSE_MODEL_MAPPING = Object.fromEntries(
-	Object.entries(MODEL_MAPPING).map(([openai, cf]) => [cf, openai])
+	Object.entries(MODEL_MAPPING).map(([openai, cf]) => [cf, openai]),
 );
 
 // Model capabilities
@@ -499,7 +499,7 @@ export const getContextWindowStats = () => {
 		models_with_8k_plus: windows.filter(w => w >= 8192).length,
 		models_with_large_context: getModelsWithContextAbove(128000),
 		models_with_medium_context: getModelsWithContextAbove(32768).filter(
-			m => MODEL_CONTEXT_WINDOWS[m] < 128000
+			m => MODEL_CONTEXT_WINDOWS[m] < 128000,
 		),
 	};
 };
@@ -508,7 +508,7 @@ export const getContextWindowStats = () => {
 export const getOptimalModelForContext = (
 	requiredContext,
 	category = 'chat',
-	capabilities = []
+	capabilities = [],
 ) => {
 	const categoryModels = MODEL_CATEGORIES[category] || [];
 
