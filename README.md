@@ -20,66 +20,85 @@ A comprehensive OpenAI-compatible API implementation using Cloudflare Workers AI
 ## 📚 API Endpoints
 
 ### Chat Completions
+
 ```
 POST /v1/chat/completions
 ```
+
 Compatible with OpenAI's chat completions API, supporting streaming and non-streaming responses.
 
 ### Completions (Legacy)
+
 ```
 POST /v1/completions
 ```
+
 Compatible with OpenAI's completions API.
 
 ### Embeddings
+
 ```
 POST /v1/embeddings
 ```
+
 Generate text embeddings using Cloudflare's embedding models.
 
 ### Audio Transcription
+
 ```
 POST /v1/audio/transcriptions
 ```
+
 Transcribe audio files to text using Whisper models.
 
 ### Audio Translation
+
 ```
 POST /v1/audio/translations
 ```
+
 Translate audio files to English text.
 
 ### Text-to-Speech
+
 ```
 POST /v1/audio/speech
 ```
+
 Generate speech from text using various voices.
 
 ### Models
+
 ```
 GET /v1/models
 ```
+
 List all available AI models.
 
 > **Note**: The `@cf/openai/gpt-oss-120b` and `@cf/openai/gpt-oss-20b` models require special handling - they use the `input` parameter instead of `prompt`/`messages`. The API automatically handles this conversion.
 
 ### Image Generation
+
 ```
 POST /v1/images/generations
 ```
+
 Generate images from text prompts.
 
 ### Retrieval-Augmented Generation (RAG)
+
 ```
 POST /v1/rag/store
 POST /v1/rag/search
 POST /v1/rag/chat
 ```
+
 Store documents for RAG, search documents, and perform RAG-enhanced chat completions.
 
 ## 🛠 Setup and Deployment
 
 ### Prerequisites
+
 - Cloudflare Workers account
 - Node.js 18+ and npm
 - Wrangler CLI installed
@@ -87,28 +106,33 @@ Store documents for RAG, search documents, and perform RAG-enhanced chat complet
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd openai-cf-workers-ai
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Configure your environment:
+
 ```bash
 # Copy and edit wrangler.toml with your account details
 cp wrangler.toml.example wrangler.toml
 ```
 
 4. Set your access token as a secret:
+
 ```bash
 wrangler secret put ACCESS_TOKEN
 ```
 
 5. Deploy to Cloudflare Workers:
+
 ```bash
 npm run deploy
 ```
@@ -127,108 +151,118 @@ Set these in your Cloudflare Workers dashboard or via `wrangler secret`:
 The API automatically maps OpenAI model names to Cloudflare Workers AI models:
 
 #### Chat Models
+
 - `gpt-3.5-turbo` → `@cf/meta/llama-3.1-8b-instruct-fp8`
 - `gpt-4` → `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
 
-#### Embedding Models  
+#### Embedding Models
+
 - `text-embedding-ada-002` → `@cf/baai/bge-base-en-v1.5`
 - `text-embedding-3-small` → `@cf/baai/bge-small-en-v1.5`
 - `text-embedding-3-large` → `@cf/baai/bge-large-en-v1.5`
 
 #### Audio Models
+
 - `whisper-1` → `@cf/openai/whisper`
 - `whisper-large-v3-turbo` → `@cf/openai/whisper-large-v3-turbo`
 - `tts-1` → `@cf/myshell-ai/melotts`
 - `tts-1-hd` → `@cf/myshell-ai/melotts`
 
 #### Image Models
+
 - `dall-e-2` → `@cf/black-forest-labs/flux-1-schnell`
 - `dall-e-3` → `@cf/black-forest-labs/flux-1-schnell`
 
 ## 📖 Usage Examples
 
 ### Chat Completion
+
 ```javascript
 const response = await fetch('https://your-worker.workers.dev/v1/chat/completions', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: 'gpt-3.5-turbo',
-    messages: [
-      { role: 'user', content: 'Hello!' }
-    ],
-    max_tokens: 100,
-  }),
+	method: 'POST',
+	headers: {
+		'Authorization': 'Bearer your-token',
+		'Content-Type': 'application/json',
+	},
+	body: JSON.stringify({
+		model: 'gpt-3.5-turbo',
+		messages: [{ role: 'user', content: 'Hello!' }],
+		max_tokens: 100,
+	}),
 });
 ```
 
 ### Audio Transcription
+
 ```javascript
 const formData = new FormData();
 formData.append('file', audioFile);
 formData.append('model', 'whisper-1');
 
 const response = await fetch('https://your-worker.workers.dev/v1/audio/transcriptions', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-  },
-  body: formData,
+	method: 'POST',
+	headers: {
+		Authorization: 'Bearer your-token',
+	},
+	body: formData,
 });
 ```
 
 ### Text Embeddings
+
 ```javascript
 const response = await fetch('https://your-worker.workers.dev/v1/embeddings', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: 'text-embedding-ada-002',
-    input: 'Your text to embed',
-  }),
+	method: 'POST',
+	headers: {
+		'Authorization': 'Bearer your-token',
+		'Content-Type': 'application/json',
+	},
+	body: JSON.stringify({
+		model: 'text-embedding-ada-002',
+		input: 'Your text to embed',
+	}),
 });
 ```
 
 ### Text-to-Speech
+
 ```javascript
 const response = await fetch('https://your-worker.workers.dev/v1/audio/speech', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer your-token',
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: 'tts-1',
-    input: 'Hello, world!',
-    voice: 'alloy',
-  }),
+	method: 'POST',
+	headers: {
+		'Authorization': 'Bearer your-token',
+		'Content-Type': 'application/json',
+	},
+	body: JSON.stringify({
+		model: 'tts-1',
+		input: 'Hello, world!',
+		voice: 'alloy',
+	}),
 });
 ```
 
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 npm run test
 ```
 
 ### Integration Tests
+
 ```bash
 npm run test:integration
 ```
 
 ### Run Tests with Coverage
+
 ```bash
 npm run test:coverage
 ```
 
 ### Manual Testing
+
 Use the provided test scripts in `tests/integration/` to test against your deployed worker:
 
 ```bash
@@ -292,15 +326,16 @@ The API provides comprehensive error handling with OpenAI-compatible error respo
 
 ```json
 {
-  "error": {
-    "message": "Invalid model: invalid-model. Available models: gpt-3.5-turbo, gpt-4",
-    "type": "invalid_request_error",
-    "param": "model"
-  }
+	"error": {
+		"message": "Invalid model: invalid-model. Available models: gpt-3.5-turbo, gpt-4",
+		"type": "invalid_request_error",
+		"param": "model"
+	}
 }
 ```
 
 ### Error Types
+
 - `invalid_request_error` (400): Bad request parameters
 - `authentication_error` (401): Invalid or missing API key
 - `permission_error` (403): Insufficient permissions
@@ -317,6 +352,7 @@ Authorization: Bearer your-access-token
 ```
 
 Set your access token using Wrangler:
+
 ```bash
 wrangler secret put ACCESS_TOKEN
 ```
@@ -331,6 +367,7 @@ The API includes comprehensive logging for debugging and monitoring:
 - AI model usage tracking
 
 Access logs through the Cloudflare Workers dashboard or use the Wrangler CLI:
+
 ```bash
 wrangler tail
 ```
@@ -370,6 +407,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📞 Support
 
 For issues and questions:
+
 1. Check the [Issues](https://github.com/your-repo/issues) page
 2. Create a new issue with detailed information
 3. Include relevant logs and configuration details

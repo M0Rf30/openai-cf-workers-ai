@@ -8,7 +8,7 @@ const createMockEnv = () => ({
 	ACCESS_TOKEN: 'test-token',
 });
 
-const createMockRequest = (body) => ({
+const createMockRequest = body => ({
 	json: () => Promise.resolve(body),
 	headers: new Map([['Content-Type', 'application/json']]),
 });
@@ -114,7 +114,7 @@ describe('Embeddings Handler', () => {
 			expect.any(String),
 			expect.objectContaining({
 				text: ['Hello, world!'],
-			}),
+			})
 		);
 	});
 
@@ -138,10 +138,7 @@ describe('Embeddings Handler', () => {
 			const response = await embeddingsHandler(mockRequest, mockEnv);
 
 			expect(response.status).toBe(200);
-			expect(mockEnv.AI.run).toHaveBeenLastCalledWith(
-				model,
-				expect.any(Object),
-			);
+			expect(mockEnv.AI.run).toHaveBeenLastCalledWith(model, expect.any(Object));
 		}
 	});
 

@@ -28,11 +28,7 @@ export const AVAILABLE_MODELS = {
 		'@cf/baai/bge-small-en-v1.5',
 		'@cf/baai/bge-large-en-v1.5',
 	],
-	stt: [
-		'@cf/openai/whisper',
-		'@cf/openai/whisper-tiny-en',
-		'@cf/openai/whisper-large-v3-turbo',
-	],
+	stt: ['@cf/openai/whisper', '@cf/openai/whisper-tiny-en', '@cf/openai/whisper-large-v3-turbo'],
 	tts: ['@cf/myshell-ai/melotts'],
 	translation: ['@cf/meta/m2m100-1.2b'],
 	language_detection: ['@cf/meta/llama-2-7b-chat-int8'],
@@ -104,7 +100,7 @@ export function validateModel(type, modelName) {
 
 		throw new ValidationError(
 			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`,
-			'model',
+			'model'
 		);
 	}
 
@@ -140,7 +136,7 @@ export function validateChatCompletionRequest(body) {
 		if (!message.role || !message.content) {
 			throw new ValidationError(
 				`Message at index ${index} must have 'role' and 'content' properties`,
-				'messages',
+				'messages'
 			);
 		}
 		validateEnum(message.role, `messages[${index}].role`, ['system', 'user', 'assistant']);
@@ -226,7 +222,10 @@ export function validateEmbeddingRequest(body) {
 	};
 
 	if (encoding_format !== undefined) {
-		validated.encoding_format = validateEnum(encoding_format, 'encoding_format', ['float', 'base64']);
+		validated.encoding_format = validateEnum(encoding_format, 'encoding_format', [
+			'float',
+			'base64',
+		]);
 	}
 
 	if (dimensions !== undefined) {
@@ -268,7 +267,7 @@ export function validateTranscriptionRequest(formData) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.transcription,
+			RESPONSE_FORMATS.transcription
 		);
 	}
 
@@ -284,7 +283,7 @@ export function validateTranscriptionRequest(formData) {
 		validated.timestamp_granularities = validateEnum(
 			timestamp_granularities,
 			'timestamp_granularities',
-			['word', 'segment'],
+			['word', 'segment']
 		);
 	}
 
@@ -317,7 +316,7 @@ export function validateTranslationRequest(formData) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.translation,
+			RESPONSE_FORMATS.translation
 		);
 	}
 
@@ -351,7 +350,7 @@ export function validateSpeechRequest(body) {
 		validated.response_format = validateEnum(
 			response_format,
 			'response_format',
-			RESPONSE_FORMATS.tts,
+			RESPONSE_FORMATS.tts
 		);
 	}
 

@@ -5,7 +5,6 @@ import { MODEL_CATEGORIES } from '../utils/models.js';
 const SUPPORTED_MODELS = MODEL_CATEGORIES.embeddings;
 
 export const embeddingsHandler = async (request, env) => {
-
 	let model = '@cf/baai/bge-base-en-v1.5';
 	let pooling = 'mean';
 
@@ -30,7 +29,7 @@ export const embeddingsHandler = async (request, env) => {
 				{
 					error: `Model "${json.model}" not supported. Available models: ${SUPPORTED_MODELS.join(', ')}`,
 				},
-				{ status: 400 },
+				{ status: 400 }
 			);
 		}
 
@@ -48,7 +47,7 @@ export const embeddingsHandler = async (request, env) => {
 		} else if (!Array.isArray(inputText)) {
 			return Response.json(
 				{ error: 'Input must be a string or array of strings' },
-				{ status: 400 },
+				{ status: 400 }
 			);
 		}
 
@@ -67,7 +66,7 @@ export const embeddingsHandler = async (request, env) => {
 			if (typeof text !== 'string' || text.trim().length === 0) {
 				return Response.json(
 					{ error: 'All input items must be non-empty strings' },
-					{ status: 400 },
+					{ status: 400 }
 				);
 			}
 		}
@@ -127,7 +126,7 @@ export const embeddingsHandler = async (request, env) => {
 		if (e.message?.includes('rate limit')) {
 			return Response.json(
 				{ error: 'Rate limit exceeded. Please try again later.' },
-				{ status: 429 },
+				{ status: 429 }
 			);
 		}
 

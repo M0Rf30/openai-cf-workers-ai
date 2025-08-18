@@ -159,7 +159,6 @@ export function formatCompletion(response, model, prompt) {
 }
 
 export function formatEmbedding(embeddings, model, input) {
-
 	const data = embeddings.map((embedding, index) => ({
 		object: 'embedding',
 		embedding: Array.isArray(embedding) ? embedding : embedding.data || embedding,
@@ -171,8 +170,12 @@ export function formatEmbedding(embeddings, model, input) {
 		data,
 		model,
 		usage: {
-			prompt_tokens: Array.isArray(input) ? input.reduce((sum, text) => sum + estimateTokens(text), 0) : estimateTokens(input),
-			total_tokens: Array.isArray(input) ? input.reduce((sum, text) => sum + estimateTokens(text), 0) : estimateTokens(input),
+			prompt_tokens: Array.isArray(input)
+				? input.reduce((sum, text) => sum + estimateTokens(text), 0)
+				: estimateTokens(input),
+			total_tokens: Array.isArray(input)
+				? input.reduce((sum, text) => sum + estimateTokens(text), 0)
+				: estimateTokens(input),
 		},
 	};
 }
@@ -181,69 +184,71 @@ export function formatTranscription(response, format, options = {}) {
 	const { timestamp_granularities, words, segments } = options;
 
 	switch (format) {
-	case 'json': {
-		const jsonResponse = {
-			text: response.text || '',
-		};
+		case 'json': {
+			const jsonResponse = {
+				text: response.text || '',
+			};
 
-		if (timestamp_granularities === 'word' && words && words.length > 0) {
-			jsonResponse.words = words;
-		}
-
-		if (timestamp_granularities === 'segment') {
-			if (segments && segments.length > 0) {
-				jsonResponse.segments = segments;
-			} else if (words && words.length > 0) {
-				jsonResponse.segments = createSegmentsFromWords(words);
+			if (timestamp_granularities === 'word' && words && words.length > 0) {
+				jsonResponse.words = words;
 			}
+
+			if (timestamp_granularities === 'segment') {
+				if (segments && segments.length > 0) {
+					jsonResponse.segments = segments;
+				} else if (words && words.length > 0) {
+					jsonResponse.segments = createSegmentsFromWords(words);
+				}
+			}
+
+			return jsonResponse;
 		}
 
-		return jsonResponse;
-	}
+		case 'verbose_json':
+			return {
+				task: 'transcribe',
+				language: response.language || options.language || 'en',
+				duration: response.duration || 0,
+				text: response.text || '',
+				words: words || [],
+				segments: segments || [],
+			};
 
-	case 'verbose_json':
-		return {
-			task: 'transcribe',
-			language: response.language || options.language || 'en',
-			duration: response.duration || 0,
-			text: response.text || '',
-			words: words || [],
-			segments: segments || [],
-		};
+		case 'text':
+			return response.text || '';
 
-	case 'text':
-		return response.text || '';
-
-	case 'srt': {
-		const srtSegments = segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
-		if (srtSegments.length > 0) {
-			let srtContent = '';
-			srtSegments.forEach((segment, index) => {
-				const startTime = formatSRTTime(segment.start);
-				const endTime = formatSRTTime(segment.end);
-				srtContent += `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n\n`;
-			});
-			return srtContent;
+		case 'srt': {
+			const srtSegments =
+				segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
+			if (srtSegments.length > 0) {
+				let srtContent = '';
+				srtSegments.forEach((segment, index) => {
+					const startTime = formatSRTTime(segment.start);
+					const endTime = formatSRTTime(segment.end);
+					srtContent += `${index + 1}\n${startTime} --> ${endTime}\n${segment.text}\n\n`;
+				});
+				return srtContent;
+			}
+			return response.text || '';
 		}
-		return response.text || '';
-	}
 
-	case 'vtt': {
-		const vttSegments = segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
-		if (vttSegments.length > 0) {
-			let vttContent = 'WEBVTT\n\n';
-			vttSegments.forEach(segment => {
-				const startTime = formatVTTTime(segment.start);
-				const endTime = formatVTTTime(segment.end);
-				vttContent += `${startTime} --> ${endTime}\n${segment.text}\n\n`;
-			});
-			return vttContent;
+		case 'vtt': {
+			const vttSegments =
+				segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
+			if (vttSegments.length > 0) {
+				let vttContent = 'WEBVTT\n\n';
+				vttSegments.forEach(segment => {
+					const startTime = formatVTTTime(segment.start);
+					const endTime = formatVTTTime(segment.end);
+					vttContent += `${startTime} --> ${endTime}\n${segment.text}\n\n`;
+				});
+				return vttContent;
+			}
+			return response.text || '';
 		}
-		return response.text || '';
-	}
 
-	default:
-		return response.text || '';
+		default:
+			return response.text || '';
 	}
 }
 
@@ -251,22 +256,35 @@ export function formatTranslation(response, format, detectedLanguage = 'unknown'
 	const translatedText = response.translated_text || response.text || '';
 
 	switch (format) {
-	case 'json':
-		return {
-			text: translatedText,
-			language: detectedLanguage,
-		};
+		case 'json':
+			return {
+				text: translatedText,
+				language: detectedLanguage,
+			};
 
-	case 'text':
-	case 'srt':
-	case 'vtt':
-		return translatedText;
+		case 'text':
+		case 'srt':
+		case 'vtt':
+			return translatedText;
 
-	default:
-		return {
-			text: translatedText,
-		};
+		default:
+			return {
+				text: translatedText,
+			};
 	}
+}
+
+// Utility function to process and remove <think> tags from response
+export function processThink(responseText) {
+	if (typeof responseText !== 'string') {
+		return responseText;
+	}
+	const thinkTagEnd = '</think>';
+	const thinkIndex = responseText.indexOf(thinkTagEnd);
+	if (thinkIndex !== -1) {
+		return responseText.substring(thinkIndex + thinkTagEnd.length).trim();
+	}
+	return responseText;
 }
 
 // Utility functions
@@ -315,11 +333,7 @@ export function getCORSHeaders() {
 
 // Response helpers
 export function createResponse(data, options = {}) {
-	const {
-		status = 200,
-		headers = {},
-		contentType = 'application/json',
-	} = options;
+	const { status = 200, headers = {}, contentType = 'application/json' } = options;
 
 	const responseHeaders = {
 		'Content-Type': contentType,

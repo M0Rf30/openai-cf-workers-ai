@@ -8,7 +8,7 @@ const createMockEnv = () => ({
 	ACCESS_TOKEN: 'test-token',
 });
 
-const createMockRequest = (body) => ({
+const createMockRequest = body => ({
 	json: () => Promise.resolve(body),
 	headers: new Map([['Content-Type', 'application/json']]),
 });
@@ -24,9 +24,7 @@ describe('Chat Handler', () => {
 	it('should handle basic chat completion', async () => {
 		const mockRequest = createMockRequest({
 			model: '@cf/qwen/qwen1.5-0.5b-chat',
-			messages: [
-				{ role: 'user', content: 'Hello!' },
-			],
+			messages: [{ role: 'user', content: 'Hello!' }],
 		});
 
 		mockEnv.AI.run.mockResolvedValue({
@@ -45,9 +43,7 @@ describe('Chat Handler', () => {
 	it('should handle streaming responses', async () => {
 		const mockRequest = createMockRequest({
 			model: '@cf/qwen/qwen1.5-0.5b-chat',
-			messages: [
-				{ role: 'user', content: 'Hello!' },
-			],
+			messages: [{ role: 'user', content: 'Hello!' }],
 			stream: true,
 		});
 
@@ -58,7 +54,7 @@ describe('Chat Handler', () => {
 					controller.enqueue('data: [DONE]\n\n');
 					controller.close();
 				},
-			}),
+			})
 		);
 
 		const response = await chatHandler(mockRequest, mockEnv);
@@ -90,16 +86,14 @@ describe('Chat Handler', () => {
 					expect.objectContaining({ role: 'system' }),
 					expect.objectContaining({ role: 'user' }),
 				]),
-			}),
+			})
 		);
 	});
 
 	it('should handle max_tokens parameter', async () => {
 		const mockRequest = createMockRequest({
 			model: '@cf/qwen/qwen1.5-0.5b-chat',
-			messages: [
-				{ role: 'user', content: 'Hello!' },
-			],
+			messages: [{ role: 'user', content: 'Hello!' }],
 			max_tokens: 100,
 		});
 
@@ -113,7 +107,7 @@ describe('Chat Handler', () => {
 			expect.any(String),
 			expect.objectContaining({
 				max_tokens: 100,
-			}),
+			})
 		);
 	});
 
@@ -141,9 +135,7 @@ describe('Chat Handler', () => {
 	it('should handle temperature parameter', async () => {
 		const mockRequest = createMockRequest({
 			model: '@cf/qwen/qwen1.5-0.5b-chat',
-			messages: [
-				{ role: 'user', content: 'Hello!' },
-			],
+			messages: [{ role: 'user', content: 'Hello!' }],
 			temperature: 0.7,
 		});
 
@@ -157,7 +149,7 @@ describe('Chat Handler', () => {
 			expect.any(String),
 			expect.objectContaining({
 				temperature: 0.7,
-			}),
+			})
 		);
 	});
 });

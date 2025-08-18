@@ -49,7 +49,7 @@ export async function searchVectors(vectorIndex, queryVector, options = {}) {
 		const filteredResults = results.matches.filter(match => match.score >= scoreThreshold);
 
 		console.log(
-			`Found ${filteredResults.length} similar vectors above threshold ${scoreThreshold}`,
+			`Found ${filteredResults.length} similar vectors above threshold ${scoreThreshold}`
 		);
 
 		return filteredResults.map(match => ({

@@ -118,13 +118,13 @@ export function validateString(value, fieldName, minLength = 0, maxLength = Infi
 	if (value.length < minLength) {
 		throw new ValidationError(
 			`Parameter ${fieldName} must be at least ${minLength} characters`,
-			fieldName,
+			fieldName
 		);
 	}
 	if (value.length > maxLength) {
 		throw new ValidationError(
 			`Parameter ${fieldName} must be at most ${maxLength} characters`,
-			fieldName,
+			fieldName
 		);
 	}
 	return value;
@@ -151,13 +151,13 @@ export function validateArray(value, fieldName, minLength = 0, maxLength = Infin
 	if (value.length < minLength) {
 		throw new ValidationError(
 			`Parameter ${fieldName} must have at least ${minLength} items`,
-			fieldName,
+			fieldName
 		);
 	}
 	if (value.length > maxLength) {
 		throw new ValidationError(
 			`Parameter ${fieldName} must have at most ${maxLength} items`,
-			fieldName,
+			fieldName
 		);
 	}
 	return value;
@@ -167,7 +167,7 @@ export function validateEnum(value, fieldName, allowedValues) {
 	if (!allowedValues.includes(value)) {
 		throw new ValidationError(
 			`Parameter ${fieldName} must be one of: ${allowedValues.join(', ')}`,
-			fieldName,
+			fieldName
 		);
 	}
 	return value;
@@ -192,7 +192,7 @@ export function validateAudioFile(file, fieldName = 'file', maxSize = 25 * 1024 
 	if (file.size > maxSize) {
 		throw new ValidationError(
 			`File ${fieldName} must be smaller than ${Math.round(maxSize / 1024 / 1024)}MB`,
-			fieldName,
+			fieldName
 		);
 	}
 
@@ -211,7 +211,7 @@ export function validateAudioFile(file, fieldName = 'file', maxSize = 25 * 1024 
 		if (!supportedTypes.includes(file.type)) {
 			throw new ValidationError(
 				`File ${fieldName} must be an audio file. Supported formats: ${supportedTypes.join(', ')}`,
-				fieldName,
+				fieldName
 			);
 		}
 	}

@@ -20,9 +20,7 @@ export async function convertImageToDataURL(imageUrl) {
 		const response = await fetch(imageUrl);
 		console.log('Fetch response status:', response.status);
 		if (!response.ok) {
-			console.error(
-				`Failed to fetch image URL: ${response.status} ${response.statusText}`,
-			);
+			console.error(`Failed to fetch image URL: ${response.status} ${response.statusText}`);
 			throw new Error(`Failed to fetch image URL: ${response.statusText}`);
 		}
 		const contentType = response.headers.get('content-type') || 'image/jpeg';

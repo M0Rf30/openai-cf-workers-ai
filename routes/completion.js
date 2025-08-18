@@ -1,4 +1,5 @@
 import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
+import { processThink } from '../utils/format.js';
 
 import { MODEL_CONTEXT_WINDOWS, calculateDefaultMaxTokens } from '../utils/models.js';
 
@@ -123,9 +124,25 @@ export const completionHandler = async (request, env) => {
 				let buffer = '';
 				const decoder = new TextDecoder();
 				const encoder = new TextEncoder();
+				let pastThinkTag = false; // New state variable
+				const thinkTagEnd = '</think>';
+
 				const transformer = new TransformStream({
 					transform(chunk, controller) {
 						buffer += decoder.decode(chunk);
+
+						if (!pastThinkTag) {
+							const thinkIndex = buffer.indexOf(thinkTagEnd);
+							if (thinkIndex !== -1) {
+								// Found the tag, trim the buffer and proceed
+								buffer = buffer.substring(thinkIndex + thinkTagEnd.length);
+								pastThinkTag = true;
+							} else {
+								// Tag not found yet, keep buffering and don't send anything
+								return;
+							}
+						}
+
 						// Process buffered data and try to find the complete message
 						while (true) {
 							const newlineIndex = buffer.indexOf('\n');
@@ -222,9 +239,58 @@ export const completionHandler = async (request, env) => {
 				const aiResp = await env.AI.run(model, aiParams);
 
 				// Log response info for debugging
+				console.log('AI Raw Response:', aiResp);
 				if (aiResp.response) {
 					console.log('AI Response length:', aiResp.response.length);
 				}
+
+				// Process OSS model responses specifically (they have a different format)
+				let responseText = '';
+				if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+					console.log('[OSS Model Completion] Raw response:', JSON.stringify(aiResp));
+
+					// Handle the new response format from Cloudflare's OSS models
+					if (typeof aiResp === 'object' && aiResp !== null) {
+						// New format has output array with message objects
+						if (Array.isArray(aiResp.output)) {
+							// Look for output_text type objects in the output array
+							const outputTextItems = aiResp.output.filter(item => item.type === 'output_text');
+							if (outputTextItems.length > 0) {
+								// Extract text from output_text items
+								responseText = outputTextItems.map(item => item.text).join('');
+							} else {
+								// Fallback to first message content if no output_text found
+								const firstMessage = aiResp.output[0];
+								if (firstMessage && Array.isArray(firstMessage.content)) {
+									responseText = firstMessage.content
+										.filter(item => item.type === 'output_text')
+										.map(item => item.text)
+										.join('');
+								} else {
+									responseText = aiResp.text || aiResp.response || '';
+								}
+							}
+						}
+						// Handle case where response is directly in aiResp (newer format)
+						else if ('response' in aiResp) {
+							responseText =
+								typeof aiResp.response === 'string'
+									? aiResp.response
+									: aiResp.response?.text ||
+										aiResp.response?.content ||
+										JSON.stringify(aiResp.response);
+						} else {
+							// Try to extract any text content from the response
+							responseText = aiResp.text || aiResp.response || JSON.stringify(aiResp);
+						}
+					} else {
+						responseText = aiResp || '';
+					}
+				} else {
+					responseText = aiResp.response || '';
+				}
+
+				const finalResponseText = processThink(responseText);
 
 				return Response.json({
 					id: uuid,
@@ -235,7 +301,7 @@ export const completionHandler = async (request, env) => {
 						{
 							index: 0,
 							finish_reason: 'stop',
-							text: aiResp.response,
+							text: finalResponseText,
 							logprobs: null,
 						},
 					],

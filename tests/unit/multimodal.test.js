@@ -8,7 +8,7 @@ const createMockEnv = () => ({
 	ACCESS_TOKEN: 'test-token',
 });
 
-const createMockRequest = (body) => ({
+const createMockRequest = body => ({
 	json: () => Promise.resolve(body),
 	headers: new Map([['Content-Type', 'application/json']]),
 });
@@ -24,9 +24,7 @@ describe('Multimodal Chat Handler', () => {
 	it('should handle text-only messages', async () => {
 		const mockRequest = createMockRequest({
 			model: '@cf/meta/llama-4-scout-17b-16e-instruct',
-			messages: [
-				{ role: 'user', content: 'Hello!' },
-			],
+			messages: [{ role: 'user', content: 'Hello!' }],
 		});
 
 		mockEnv.AI.run.mockResolvedValue({

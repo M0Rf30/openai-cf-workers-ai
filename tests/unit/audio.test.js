@@ -55,7 +55,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData,
+				mockFormData
 			);
 
 			mockEnv.AI.run.mockResolvedValue({
@@ -76,7 +76,7 @@ describe('Audio Routes', () => {
 				'@cf/openai/whisper-large-v3-turbo',
 				expect.objectContaining({
 					audio: expect.any(String), // Base64 string
-				}),
+				})
 			);
 		});
 
@@ -87,7 +87,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData,
+				mockFormData
 			);
 
 			const response = await transcriptionHandler(mockRequest, mockEnv);
@@ -115,7 +115,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData,
+				mockFormData
 			);
 
 			mockEnv.AI.run.mockResolvedValue({
@@ -145,7 +145,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData,
+				mockFormData
 			);
 
 			mockEnv.AI.run.mockResolvedValue({
@@ -194,7 +194,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData,
+				mockFormData
 			);
 
 			// Mock transcription response
@@ -229,7 +229,7 @@ describe('Audio Routes', () => {
 
 			const mockRequest = createMockRequest(
 				{ 'Content-Type': 'multipart/form-data' },
-				mockFormData,
+				mockFormData
 			);
 
 			mockEnv.AI.run
@@ -252,15 +252,11 @@ describe('Audio Routes', () => {
 
 	describe('speechHandler', () => {
 		it('should generate speech successfully', async () => {
-			const mockRequest = createMockRequest(
-				{ 'Content-Type': 'application/json' },
-				null,
-				{
-					model: 'tts-1',
-					input: 'Hello, world!',
-					voice: 'alloy',
-				},
-			);
+			const mockRequest = createMockRequest({ 'Content-Type': 'application/json' }, null, {
+				model: 'tts-1',
+				input: 'Hello, world!',
+				voice: 'alloy',
+			});
 
 			const mockAudioData = new Uint8Array([1, 2, 3, 4]);
 			mockEnv.AI.run.mockResolvedValue({
@@ -276,19 +272,15 @@ describe('Audio Routes', () => {
 				expect.objectContaining({
 					prompt: 'Hello, world!',
 					lang: 'en', // alloy maps to English
-				}),
+				})
 			);
 		});
 
 		it('should handle missing input error', async () => {
-			const mockRequest = createMockRequest(
-				{ 'Content-Type': 'application/json' },
-				null,
-				{
-					model: 'tts-1',
-					voice: 'alloy',
-				},
-			);
+			const mockRequest = createMockRequest({ 'Content-Type': 'application/json' }, null, {
+				model: 'tts-1',
+				voice: 'alloy',
+			});
 
 			const response = await speechHandler(mockRequest, mockEnv);
 
@@ -296,15 +288,11 @@ describe('Audio Routes', () => {
 		});
 
 		it('should handle invalid voice error', async () => {
-			const mockRequest = createMockRequest(
-				{ 'Content-Type': 'application/json' },
-				null,
-				{
-					model: 'tts-1',
-					input: 'Hello, world!',
-					voice: 'invalid-voice',
-				},
-			);
+			const mockRequest = createMockRequest({ 'Content-Type': 'application/json' }, null, {
+				model: 'tts-1',
+				input: 'Hello, world!',
+				voice: 'invalid-voice',
+			});
 
 			const response = await speechHandler(mockRequest, mockEnv);
 
@@ -319,15 +307,11 @@ describe('Audio Routes', () => {
 			];
 
 			for (const { voice, lang } of voices) {
-				const mockRequest = createMockRequest(
-					{ 'Content-Type': 'application/json' },
-					null,
-					{
-						model: 'tts-1',
-						input: 'Hello, world!',
-						voice,
-					},
-				);
+				const mockRequest = createMockRequest({ 'Content-Type': 'application/json' }, null, {
+					model: 'tts-1',
+					input: 'Hello, world!',
+					voice,
+				});
 
 				mockEnv.AI.run.mockResolvedValue({
 					audio: btoa('mock-audio-data'),
@@ -339,7 +323,7 @@ describe('Audio Routes', () => {
 					'@cf/myshell-ai/melotts',
 					expect.objectContaining({
 						lang,
-					}),
+					})
 				);
 			}
 		});

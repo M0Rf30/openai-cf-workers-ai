@@ -433,8 +433,8 @@ export const getAllModels = () => {
 // Helper function to get models by capability
 export const getModelsByCapability = capability => {
 	return Object.entries(MODEL_CAPABILITIES)
-		.filter(([model, capabilities]) => capabilities.includes(capability))
-		.map(([model]) => model);
+		.filter(([_model, capabilities]) => capabilities.includes(capability))
+		.map(([_model]) => _model);
 };
 
 // Helper function to check if model exists
@@ -470,8 +470,8 @@ export const calculateDefaultMaxTokens = (modelName, reservePercentage = 10) => 
 // Helper function to get all models with context windows above a threshold
 export const getModelsWithContextAbove = threshold => {
 	return Object.entries(MODEL_CONTEXT_WINDOWS)
-		.filter(([model, contextWindow]) => contextWindow >= threshold)
-		.map(([model]) => model);
+		.filter(([_model, contextWindow]) => contextWindow >= threshold)
+		.map(([_model]) => _model);
 };
 
 // Helper function to get models grouped by context window size

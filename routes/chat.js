@@ -10,9 +10,9 @@ import {
 	MODEL_CATEGORIES,
 	DEFAULT_MODELS,
 	MODEL_CONTEXT_WINDOWS,
-	calculateDefaultMaxTokens,
 	MODEL_CAPABILITIES,
 } from '../utils/models.js';
+import { processThink } from '../utils/format.js';
 
 // Helper function to process messages with potential image content
 async function processMultimodalMessages(messages) {
@@ -132,8 +132,6 @@ export const chatHandler = async (request, env) => {
 			// Get model configuration and context window
 			const context_window = MODEL_CONTEXT_WINDOWS[model];
 
-			const prompt_tokens = 0; // Placeholder for actual token counting
-
 			// Handle max_tokens parameter with reasonable defaults and limits
 			// Always use a numeric value (never undefined or null) for max_tokens
 			let max_tokens = 1024; // Fallback default
@@ -204,12 +202,27 @@ export const chatHandler = async (request, env) => {
 			const decoder = new TextDecoder();
 			const encoder = new TextEncoder();
 			let isFinished = false;
+			let pastThinkTag = false; // New state variable
+			const thinkTagEnd = '</think>';
 
 			const transformer = new TransformStream({
 				transform(chunk, controller) {
 					if (isFinished) return;
 
 					buffer += decoder.decode(chunk);
+
+					if (!pastThinkTag) {
+						const thinkIndex = buffer.indexOf(thinkTagEnd);
+						if (thinkIndex !== -1) {
+							// Found the tag, trim the buffer and proceed
+							buffer = buffer.substring(thinkIndex + thinkTagEnd.length);
+							pastThinkTag = true;
+						} else {
+							// Tag not found yet, keep buffering and don't send anything
+							return;
+						}
+					}
+
 					// Process buffered data and try to find the complete message
 					while (true) {
 						const newlineIndex = buffer.indexOf('\n');
@@ -256,7 +269,7 @@ export const chatHandler = async (request, env) => {
 									// Debug OSS model streaming responses
 									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
 										console.log('[OSS Model Stream] Response chunk type:', typeof data.response);
-										if (typeof data.response === 'object') {
+										if (typeof data.response === 'object' && data.response !== null) {
 											console.log(
 												'[OSS Model Stream] Response chunk keys:',
 												Object.keys(data.response)
@@ -310,6 +323,7 @@ export const chatHandler = async (request, env) => {
 						}
 					}
 				},
+
 				flush(controller) {
 					// Ensure stream ends properly if not already finished
 					if (!isFinished) {
@@ -422,7 +436,7 @@ export const chatHandler = async (request, env) => {
 			}
 
 			// Clone the aiParams to ensure we don't modify the original object
-			let finalParams = { ...aiParams };
+			const finalParams = { ...aiParams };
 
 			// The Cloudflare backend expects max_tokens to be a valid integer value
 			// This is the key fix to address the "Type mismatch of '/max_tokens', 'integer' not in 'null'" error
@@ -451,40 +465,60 @@ export const chatHandler = async (request, env) => {
 			) {
 				// For OSS models in non-streaming mode, we need to extract the response content
 				console.log('[OSS Model] Processing non-streaming response for', model);
-				console.log('[OSS Model] Raw response structure:', JSON.stringify(Object.keys(aiResp)));
+				console.log('[OSS Model] Raw response:', JSON.stringify(aiResp));
 
-				if (typeof aiResp === 'object' && aiResp.result?.response) {
-					console.log('[OSS Model] Response type:', typeof aiResp.result.response);
-					console.log(
-						'[OSS Model] Response keys:',
-						typeof aiResp.result.response === 'object'
-							? Object.keys(aiResp.result.response)
-							: 'N/A (not an object)'
-					);
+				// Handle the new response format from Cloudflare's OSS models
+				if (typeof aiResp === 'object' && aiResp !== null) {
+					// New format has output array with message objects
+					if (Array.isArray(aiResp.output)) {
+						// Find the message object with type 'message' and role 'assistant'
+						const assistantMessage = aiResp.output.find(
+							msg => msg.type === 'message' && msg.role === 'assistant'
+						);
 
-					const responseContent =
-						typeof aiResp.result.response === 'string'
-							? aiResp.result.response
-							: aiResp.result.response?.text ||
-								aiResp.result.response?.content ||
-								JSON.stringify(aiResp.result.response);
-
-					// Create a format that parseFunctionCall can handle
-					processedResp = responseContent;
-					console.log(
-						'[OSS Model] Processed response (truncated):',
-						typeof processedResp === 'string'
-							? processedResp.length > 100
-								? processedResp.substring(0, 100) + '...'
-								: processedResp
-							: 'Not a string'
-					);
+						if (assistantMessage && Array.isArray(assistantMessage.content)) {
+							// Extract text content from the content array
+							const textContent = assistantMessage.content
+								.filter(item => item.type === 'output_text')
+								.map(item => item.text)
+								.join('');
+							processedResp = textContent || '';
+						} else {
+							// Look for output_text type objects in the output array
+							const outputTextItems = aiResp.output.filter(item => item.type === 'output_text');
+							if (outputTextItems.length > 0) {
+								// Extract text from output_text items
+								const textContent = outputTextItems.map(item => item.text).join('');
+								processedResp = textContent || '';
+							} else {
+								// Fallback to first message content if no assistant message found
+								const firstMessage = aiResp.output[0];
+								if (firstMessage && Array.isArray(firstMessage.content)) {
+									const textContent = firstMessage.content
+										.filter(item => item.type === 'output_text')
+										.map(item => item.text)
+										.join('');
+									processedResp = textContent || '';
+								} else {
+									processedResp = aiResp.text || aiResp.response || '';
+								}
+							}
+						}
+					}
+					// Handle case where response is directly in aiResp (newer format)
+					else if ('response' in aiResp) {
+						processedResp =
+							typeof aiResp.response === 'string'
+								? aiResp.response
+								: aiResp.response?.text ||
+									aiResp.response?.content ||
+									JSON.stringify(aiResp.response);
+					} else {
+						// Try to extract any text content from the response
+						processedResp = aiResp.text || aiResp.response || JSON.stringify(aiResp);
+					}
 				} else {
-					console.warn('[OSS Model] Unable to extract response content from OSS model response');
-					console.log(
-						'[OSS Model] Response structure:',
-						JSON.stringify(aiResp, null, 2).substring(0, 500) + '...'
-					);
+					processedResp = aiResp || '';
 				}
 			}
 
@@ -499,7 +533,35 @@ export const chatHandler = async (request, env) => {
 				});
 			} else {
 				// Process the response for potential function calls
-				const { hasFunction, functionCall, content } = parseFunctionCall(processedResp);
+				// For OSS models, processedResp should already be the content string
+				// For other models, it might be the full response object
+				let contentToProcess = processedResp;
+				if (
+					typeof processedResp === 'object' &&
+					processedResp !== null &&
+					'response' in processedResp
+				) {
+					contentToProcess = processedResp.response;
+				}
+
+				// For OSS models, ensure we're passing just the text content, not the full object
+				if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
+					// If processedResp is still an object, try to extract the text content
+					if (typeof processedResp === 'object' && processedResp !== null) {
+						if (Array.isArray(processedResp.output)) {
+							// Look for output_text type objects in the output array
+							const outputTextItems = processedResp.output.filter(
+								item => item.type === 'output_text'
+							);
+							if (outputTextItems.length > 0) {
+								// Extract text from output_text items
+								contentToProcess = outputTextItems.map(item => item.text).join('');
+							}
+						}
+					}
+				}
+
+				const { hasFunction, functionCall, content } = parseFunctionCall(contentToProcess);
 
 				let response;
 				if (hasFunction && tools) {
@@ -525,6 +587,7 @@ export const chatHandler = async (request, env) => {
 					};
 				} else {
 					// Regular text response
+					const finalContent = processThink(content);
 					response = {
 						id: uuid,
 						model: json.model || model,
@@ -535,7 +598,7 @@ export const chatHandler = async (request, env) => {
 								index: 0,
 								message: {
 									role: 'assistant',
-									content: content,
+									content: finalContent,
 								},
 								finish_reason: 'stop',
 							},
