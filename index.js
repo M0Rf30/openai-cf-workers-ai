@@ -11,7 +11,6 @@ import { storeDocumentHandler, ragSearchHandler, ragChatHandler } from './routes
 
 // import utilities
 import { DistributedRateLimiter } from './utils/DistributedRateLimiter';
-import { rateLimitMiddleware } from './utils/rateLimiting';
 
 // Create a new router
 const router = Router({ base: '/v1' });
@@ -25,22 +24,6 @@ function extractToken(authorizationHeader) {
 	}
 	return null;
 }
-
-// MIDDLEWARE: Rate limiting
-const rateLimit = async (request, env) => {
-	// Configure rate limits based on endpoint
-	let limit = 100; // Default requests per hour
-	const windowMs = 3600000; // 1 hour in milliseconds
-
-	const url = new URL(request.url);
-	if (url.pathname.includes('/chat/') || url.pathname.includes('/completions')) {
-		limit = 50; // More restrictive for AI endpoints
-	} else if (url.pathname.includes('/images/')) {
-		limit = 20; // Even more restrictive for image generation
-	}
-
-	return rateLimitMiddleware(request, env, limit, windowMs);
-};
 
 // MIDDLEWARE: withAuthenticatedUser - embeds user in Request or returns a 401
 const bearerAuthentication = (request, env) => {

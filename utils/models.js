@@ -37,40 +37,7 @@ export const MODEL_CONTEXT_WINDOWS = {
 	// === Qwen Models ===
 	'@cf/qwen/qwq-32b': 32768, // 32k tokens (reasoning model)
 	'@cf/qwen/qwen2.5-coder-32b-instruct': 32768, // 32k tokens (coder model)
-	'@cf/qwen/qwen1.5-14b-chat-awq': 32768, // 32k tokens
-	'@cf/qwen/qwen1.5-7b-chat-awq': 32768, // 32k tokens
-	'@cf/qwen/qwen1.5-1.8b-chat': 32768, // 32k tokens
-	'@cf/qwen/qwen1.5-0.5b-chat': 32768, // 32k tokens
 
-	// === DeepSeek Models ===
-	'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': 32768, // 32k tokens
-	'@cf/deepseek-ai/deepseek-math-7b-instruct': 4096, // 4k tokens
-
-	// === Other Text Generation Models ===
-	'@cf/tinyllama/tinyllama-1.1b-chat-v1.0': 2048, // 2k tokens
-	'@cf/fblgit/una-cybertron-7b-v2-bf16': 8192, // 8k tokens
-	'@cf/microsoft/phi-2': 2048, // 2k tokens
-	'@cf/openchat/openchat-3.5-0106': 8192, // 8k tokens
-	'@cf/tiiuae/falcon-7b-instruct': 2048, // 2k tokens
-	'@cf/thebloke/discolm-german-7b-v1-awq': 8192, // 8k tokens
-	'@cf/unum/uform-gen2-qwen-500m': 2048, // 2k tokens
-	'@cf/defog/sqlcoder-7b-2': 8192, // 8k tokens
-	'@cf/openai/gpt-oss-120b': 8192, // 8k tokens
-	'@cf/openai/gpt-oss-20b': 8192, // 8k tokens
-	'@cf/facebook/bart-large-cnn': 1024, // 1k tokens
-
-	// === HuggingFace Models ===
-	'@hf/nexusflow/starling-lm-7b-beta': 8192, // 8k tokens
-	'@hf/thebloke/llamaguard-7b-awq': 4096, // 4k tokens
-	'@hf/thebloke/neural-chat-7b-v3-1-awq': 8192, // 8k tokens
-	'@hf/mistral/mistral-7b-instruct-v0.2': 32768, // 32k tokens
-	'@hf/thebloke/mistral-7b-instruct-v0.1-awq': 8192, // 8k tokens
-	'@hf/thebloke/llama-2-13b-chat-awq': 4096, // 4k tokens
-	'@hf/thebloke/deepseek-coder-6.7b-base-awq': 4096, // 4k tokens
-	'@hf/thebloke/openhermes-2.5-mistral-7b-awq': 8192, // 8k tokens
-	'@hf/thebloke/deepseek-coder-6.7b-instruct-awq': 4096, // 4k tokens
-	'@hf/nousresearch/hermes-2-pro-mistral-7b': 8192, // 8k tokens
-	'@hf/thebloke/zephyr-7b-beta-awq': 8192, // 8k tokens
 	'@hf/google/gemma-7b-it': 8192, // 8k tokens
 
 	// === Embedding Models (Input Context) ===
@@ -86,6 +53,8 @@ export const MODEL_CONTEXT_WINDOWS = {
 	'@cf/openai/whisper-large-v3-turbo': 30, // 30 seconds of audio
 	'@cf/myshell-ai/melotts': 4000, // ~4k characters of text input
 	'@cf/meta/m2m100-1.2b': 1024, // 1k tokens
+	'@cf/deepgram/aura-1': 0, // Audio model
+	'@cf/deepgram/nova-3': 0, // Audio model
 
 	// === Vision Models ===
 	'@cf/llava-hf/llava-1.5-7b-hf': 4096, // 4k tokens + image
@@ -101,6 +70,8 @@ export const MODEL_CONTEXT_WINDOWS = {
 	'@cf/runwayml/stable-diffusion-v1-5-inpainting': 77, // 77 tokens prompt limit
 	'@cf/stabilityai/stable-diffusion-xl-base-1.0': 77, // 77 tokens prompt limit
 	'@cf/lykon/dreamshaper-8-lcm': 77, // 77 tokens prompt limit
+	'@cf/leonardo/lucid-origin': 0, // Image generation model
+	'@cf/leonardo/phoenix-1.0': 0, // Image generation model
 
 	// === Object Detection Models ===
 	'@cf/facebook/detr-resnet-50': 1, // Single image
@@ -109,113 +80,71 @@ export const MODEL_CONTEXT_WINDOWS = {
 // === ORIGINAL MODEL CATEGORIES ===
 export const MODEL_CATEGORIES = {
 	chat: [
-		'@cf/qwen/qwen1.5-0.5b-chat',
 		'@cf/meta/llama-3-8b-instruct',
 		'@cf/meta/llama-3.2-3b-instruct',
 		'@cf/meta/llama-guard-3-8b',
 		'@cf/meta/llama-2-7b-chat-fp16',
 		'@cf/mistral/mistral-7b-instruct-v0.1',
 		'@cf/mistral/mistral-7b-instruct-v0.2-lora',
-		'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
-		'@cf/fblgit/una-cybertron-7b-v2-bf16',
 		'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
 		'@cf/meta/llama-2-7b-chat-int8',
 		'@cf/meta/llama-3.1-8b-instruct-fp8',
-		'@cf/qwen/qwen1.5-7b-chat-awq',
 		'@cf/meta/llama-3.2-1b-instruct',
 		'@cf/meta/llama-3.3-70b-instruct-fp8-fast',
 		'@cf/mistralai/mistral-small-3.1-24b-instruct',
 		'@cf/meta/llama-3.1-8b-instruct-awq',
 		'@cf/google/gemma-7b-it-lora',
-		'@cf/qwen/qwen1.5-1.8b-chat',
 		'@cf/meta/llama-3-8b-instruct-awq',
 		'@cf/meta/llama-3.2-11b-vision-instruct',
 		'@cf/microsoft/phi-2',
-		'@cf/qwen/qwen1.5-14b-chat-awq',
-		'@cf/openchat/openchat-3.5-0106',
 		'@cf/meta/llama-4-scout-17b-16e-instruct',
 		'@cf/google/gemma-3-12b-it',
 		'@cf/qwen/qwq-32b',
 		'@cf/qwen/qwen2.5-coder-32b-instruct',
-		'@cf/deepseek-ai/deepseek-math-7b-instruct',
-		'@cf/tiiuae/falcon-7b-instruct',
-		'@cf/thebloke/discolm-german-7b-v1-awq',
 		'@cf/meta-llama/llama-2-7b-chat-hf-lora',
 		'@cf/unum/uform-gen2-qwen-500m',
 		'@cf/defog/sqlcoder-7b-2',
 		'@cf/openai/gpt-oss-120b',
 		'@cf/openai/gpt-oss-20b',
-		// Missing HuggingFace models added
-		'@hf/nexusflow/starling-lm-7b-beta',
-		'@hf/thebloke/llamaguard-7b-awq',
-		'@hf/thebloke/neural-chat-7b-v3-1-awq',
 		'@hf/mistral/mistral-7b-instruct-v0.2',
-		'@hf/thebloke/mistral-7b-instruct-v0.1-awq',
-		'@hf/thebloke/llama-2-13b-chat-awq',
-		'@hf/thebloke/deepseek-coder-6.7b-base-awq',
-		'@hf/thebloke/openhermes-2.5-mistral-7b-awq',
-		'@hf/thebloke/deepseek-coder-6.7b-instruct-awq',
 		'@hf/nousresearch/hermes-2-pro-mistral-7b',
-		'@hf/thebloke/zephyr-7b-beta-awq',
 		'@hf/meta-llama/meta-llama-3-8b-instruct',
 		'@hf/google/gemma-7b-it',
-		// Missing Cloudflare models added
 		'@cf/google/gemma-2b-it-lora',
 		'@cf/facebook/bart-large-cnn',
 	],
 
 	completion: [
-		'@cf/qwen/qwen1.5-0.5b-chat',
 		'@cf/meta/llama-3-8b-instruct',
 		'@cf/meta/llama-3.2-3b-instruct',
 		'@cf/meta/llama-guard-3-8b',
 		'@cf/meta/llama-2-7b-chat-fp16',
 		'@cf/mistral/mistral-7b-instruct-v0.1',
 		'@cf/mistral/mistral-7b-instruct-v0.2-lora',
-		'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
-		'@cf/fblgit/una-cybertron-7b-v2-bf16',
 		'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b',
 		'@cf/meta/llama-2-7b-chat-int8',
 		'@cf/meta/llama-3.1-8b-instruct-fp8',
-		'@cf/qwen/qwen1.5-7b-chat-awq',
 		'@cf/meta/llama-3.2-1b-instruct',
 		'@cf/meta/llama-3.3-70b-instruct-fp8-fast',
 		'@cf/mistralai/mistral-small-3.1-24b-instruct',
 		'@cf/meta/llama-3.1-8b-instruct-awq',
 		'@cf/google/gemma-7b-it-lora',
-		'@cf/qwen/qwen1.5-1.8b-chat',
 		'@cf/meta/llama-3-8b-instruct-awq',
 		'@cf/meta/llama-3.2-11b-vision-instruct',
 		'@cf/microsoft/phi-2',
-		'@cf/qwen/qwen1.5-14b-chat-awq',
-		'@cf/openchat/openchat-3.5-0106',
 		'@cf/meta/llama-4-scout-17b-16e-instruct',
 		'@cf/google/gemma-3-12b-it',
 		'@cf/qwen/qwq-32b',
 		'@cf/qwen/qwen2.5-coder-32b-instruct',
-		'@cf/deepseek-ai/deepseek-math-7b-instruct',
-		'@cf/tiiuae/falcon-7b-instruct',
-		'@cf/thebloke/discolm-german-7b-v1-awq',
 		'@cf/meta-llama/llama-2-7b-chat-hf-lora',
 		'@cf/unum/uform-gen2-qwen-500m',
 		'@cf/defog/sqlcoder-7b-2',
 		'@cf/openai/gpt-oss-120b',
 		'@cf/openai/gpt-oss-20b',
-		// Missing HuggingFace models added
-		'@hf/nexusflow/starling-lm-7b-beta',
-		'@hf/thebloke/llamaguard-7b-awq',
-		'@hf/thebloke/neural-chat-7b-v3-1-awq',
 		'@hf/mistral/mistral-7b-instruct-v0.2',
-		'@hf/thebloke/mistral-7b-instruct-v0.1-awq',
-		'@hf/thebloke/llama-2-13b-chat-awq',
-		'@hf/thebloke/deepseek-coder-6.7b-base-awq',
-		'@hf/thebloke/openhermes-2.5-mistral-7b-awq',
-		'@hf/thebloke/deepseek-coder-6.7b-instruct-awq',
 		'@hf/nousresearch/hermes-2-pro-mistral-7b',
-		'@hf/thebloke/zephyr-7b-beta-awq',
 		'@hf/meta-llama/meta-llama-3-8b-instruct',
 		'@hf/google/gemma-7b-it',
-		// Missing Cloudflare models added
 		'@cf/google/gemma-2b-it-lora',
 		'@cf/facebook/bart-large-cnn',
 	],
@@ -232,9 +161,10 @@ export const MODEL_CATEGORIES = {
 		'@cf/openai/whisper',
 		'@cf/openai/whisper-tiny-en',
 		'@cf/openai/whisper-large-v3-turbo',
+		'@cf/deepgram/nova-3',
 	],
 
-	audio_tts: ['@cf/myshell-ai/melotts'],
+	audio_tts: ['@cf/myshell-ai/melotts', '@cf/deepgram/aura-1'],
 
 	audio_translation: ['@cf/meta/m2m100-1.2b'],
 
@@ -247,13 +177,11 @@ export const MODEL_CATEGORIES = {
 		'@cf/runwayml/stable-diffusion-v1-5-inpainting',
 		'@cf/stabilityai/stable-diffusion-xl-base-1.0',
 		'@cf/lykon/dreamshaper-8-lcm',
+		'@cf/leonardo/lucid-origin',
+		'@cf/leonardo/phoenix-1.0',
 	],
 
-	vision: [
-		'@cf/meta/llama-3.2-11b-vision-instruct',
-		'@cf/llava-hf/llava-1.5-7b-hf',
-		'@cf/unum/uform-gen2-qwen-500m',
-	],
+	vision: ['@cf/meta/llama-3.2-11b-vision-instruct', '@cf/llava-hf/llava-1.5-7b-hf', '@cf/unum/uform-gen2-qwen-500m'],
 
 	classification: ['@cf/huggingface/distilbert-sst-2-int8', '@cf/microsoft/resnet-50'],
 
@@ -313,7 +241,7 @@ export const MODEL_MAPPING = {
 
 // Reverse mapping for API responses
 export const REVERSE_MODEL_MAPPING = Object.fromEntries(
-	Object.entries(MODEL_MAPPING).map(([openai, cf]) => [cf, openai]),
+	Object.entries(MODEL_MAPPING).map(([openai, cf]) => [cf, openai])
 );
 
 // Model capabilities
@@ -321,55 +249,7 @@ export const MODEL_CAPABILITIES = {
 	// Chat models - Cloudflare
 	'@cf/meta/llama-3.1-8b-instruct-fp8': ['text-generation', 'function-calling'],
 	'@cf/meta/llama-3.3-70b-instruct-fp8-fast': ['text-generation', 'function-calling'],
-	'@cf/qwen/qwen1.5-0.5b-chat': ['text-generation'],
-	'@cf/meta/llama-3-8b-instruct': ['text-generation'],
-	'@cf/meta/llama-3.2-3b-instruct': ['text-generation'],
-	'@cf/meta/llama-guard-3-8b': ['text-generation', 'content-moderation'],
-	'@cf/meta/llama-2-7b-chat-fp16': ['text-generation'],
-	'@cf/mistral/mistral-7b-instruct-v0.1': ['text-generation'],
-	'@cf/mistral/mistral-7b-instruct-v0.2-lora': ['text-generation'],
-	'@cf/tinyllama/tinyllama-1.1b-chat-v1.0': ['text-generation'],
-	'@cf/fblgit/una-cybertron-7b-v2-bf16': ['text-generation'],
-	'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': ['text-generation', 'reasoning'],
-	'@cf/meta/llama-2-7b-chat-int8': ['text-generation', 'language-detection'],
-	'@cf/qwen/qwen1.5-7b-chat-awq': ['text-generation'],
-	'@cf/meta/llama-3.2-1b-instruct': ['text-generation'],
-	'@cf/mistralai/mistral-small-3.1-24b-instruct': ['text-generation'],
-	'@cf/meta/llama-3.1-8b-instruct-awq': ['text-generation'],
-	'@cf/google/gemma-7b-it-lora': ['text-generation'],
-	'@cf/google/gemma-2b-it-lora': ['text-generation'],
-	'@cf/qwen/qwen1.5-1.8b-chat': ['text-generation'],
-	'@cf/meta/llama-3-8b-instruct-awq': ['text-generation'],
-	'@cf/meta/llama-3.2-11b-vision-instruct': ['text-generation', 'vision'],
-	'@cf/microsoft/phi-2': ['text-generation'],
-	'@cf/qwen/qwen1.5-14b-chat-awq': ['text-generation'],
-	'@cf/openchat/openchat-3.5-0106': ['text-generation'],
-	'@cf/meta/llama-4-scout-17b-16e-instruct': ['text-generation', 'vision'],
-	'@cf/google/gemma-3-12b-it': ['text-generation'],
-	'@cf/qwen/qwq-32b': ['text-generation', 'reasoning'],
-	'@cf/qwen/qwen2.5-coder-32b-instruct': ['text-generation', 'code-generation'],
-	'@cf/deepseek-ai/deepseek-math-7b-instruct': ['text-generation', 'math'],
-	'@cf/tiiuae/falcon-7b-instruct': ['text-generation'],
-	'@cf/thebloke/discolm-german-7b-v1-awq': ['text-generation', 'german'],
-	'@cf/meta-llama/llama-2-7b-chat-hf-lora': ['text-generation'],
-	'@cf/unum/uform-gen2-qwen-500m': ['vision'],
-	'@cf/defog/sqlcoder-7b-2': ['text-generation', 'sql'],
-	'@cf/openai/gpt-oss-120b': ['text-generation'],
-	'@cf/openai/gpt-oss-20b': ['text-generation'],
-	'@cf/facebook/bart-large-cnn': ['text-generation', 'summarization'],
 
-	// Chat models - HuggingFace
-	'@hf/nexusflow/starling-lm-7b-beta': ['text-generation'],
-	'@hf/thebloke/llamaguard-7b-awq': ['text-generation', 'content-moderation'],
-	'@hf/thebloke/neural-chat-7b-v3-1-awq': ['text-generation'],
-	'@hf/mistral/mistral-7b-instruct-v0.2': ['text-generation'],
-	'@hf/thebloke/mistral-7b-instruct-v0.1-awq': ['text-generation'],
-	'@hf/thebloke/llama-2-13b-chat-awq': ['text-generation'],
-	'@hf/thebloke/deepseek-coder-6.7b-base-awq': ['text-generation', 'code-generation'],
-	'@hf/thebloke/openhermes-2.5-mistral-7b-awq': ['text-generation'],
-	'@hf/thebloke/deepseek-coder-6.7b-instruct-awq': ['text-generation', 'code-generation'],
-	'@hf/nousresearch/hermes-2-pro-mistral-7b': ['text-generation'],
-	'@hf/thebloke/zephyr-7b-beta-awq': ['text-generation'],
 	'@hf/meta-llama/meta-llama-3-8b-instruct': ['text-generation'],
 	'@hf/google/gemma-7b-it': ['text-generation'],
 
@@ -386,6 +266,8 @@ export const MODEL_CAPABILITIES = {
 	'@cf/openai/whisper-large-v3-turbo': ['speech-to-text'],
 	'@cf/myshell-ai/melotts': ['text-to-speech'],
 	'@cf/meta/m2m100-1.2b': ['translation'],
+	'@cf/deepgram/aura-1': ['text-to-speech'],
+	'@cf/deepgram/nova-3': ['speech-to-text'],
 
 	// Image models
 	'@cf/black-forest-labs/flux-1-schnell': ['image-generation'],
@@ -394,6 +276,8 @@ export const MODEL_CAPABILITIES = {
 	'@cf/runwayml/stable-diffusion-v1-5-inpainting': ['image-generation', 'inpainting'],
 	'@cf/stabilityai/stable-diffusion-xl-base-1.0': ['image-generation'],
 	'@cf/lykon/dreamshaper-8-lcm': ['image-generation'],
+	'@cf/leonardo/lucid-origin': ['image-generation'],
+	'@cf/leonardo/phoenix-1.0': ['image-generation'],
 
 	// Vision models
 	'@cf/llava-hf/llava-1.5-7b-hf': ['vision'],
@@ -498,18 +382,12 @@ export const getContextWindowStats = () => {
 		models_with_32k_plus: windows.filter(w => w >= 32768).length,
 		models_with_8k_plus: windows.filter(w => w >= 8192).length,
 		models_with_large_context: getModelsWithContextAbove(128000),
-		models_with_medium_context: getModelsWithContextAbove(32768).filter(
-			m => MODEL_CONTEXT_WINDOWS[m] < 128000,
-		),
+		models_with_medium_context: getModelsWithContextAbove(32768).filter(m => MODEL_CONTEXT_WINDOWS[m] < 128000),
 	};
 };
 
 // Helper to get optimal model for context size requirement
-export const getOptimalModelForContext = (
-	requiredContext,
-	category = 'chat',
-	capabilities = [],
-) => {
+export const getOptimalModelForContext = (requiredContext, category = 'chat', capabilities = []) => {
 	const categoryModels = MODEL_CATEGORIES[category] || [];
 
 	const suitableModels = categoryModels.filter(model => {
@@ -544,11 +422,7 @@ export const getModelRecommendation = useCase => {
 			'@cf/tinyllama/tinyllama-1.1b-chat-v1.0',
 			'@cf/qwen/qwen1.5-0.5b-chat',
 		],
-		'balanced': [
-			'@cf/meta/llama-3.1-8b-instruct-fp8',
-			'@cf/meta/llama-3-8b-instruct',
-			'@cf/google/gemma-7b-it',
-		],
+		'balanced': ['@cf/meta/llama-3.1-8b-instruct-fp8', '@cf/meta/llama-3-8b-instruct', '@cf/google/gemma-7b-it'],
 	};
 
 	return recommendations[useCase] || [];

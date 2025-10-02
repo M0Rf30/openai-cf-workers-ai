@@ -34,6 +34,7 @@ This document outlines the conventions and commands for agentic coding in this r
 - **Model Context Windows:** Refer to `utils/models.js` for context window information.
 - **Model Categories:** Models are organized by capabilities in `utils/models.js`.
 - **Model Mappings:** OpenAI-compatible model names are mapped in `utils/models.js`.
+- **Updated Models:** Updated models related to Cloudflare can be retrieved from models.dev.
 
 ## Testing Guidelines
 

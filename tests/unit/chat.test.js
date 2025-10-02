@@ -23,7 +23,7 @@ describe('Chat Handler', () => {
 
 	it('should handle basic chat completion', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 			messages: [{ role: 'user', content: 'Hello!' }],
 		});
 
@@ -42,7 +42,7 @@ describe('Chat Handler', () => {
 
 	it('should handle streaming responses', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 			messages: [{ role: 'user', content: 'Hello!' }],
 			stream: true,
 		});
@@ -65,7 +65,7 @@ describe('Chat Handler', () => {
 
 	it('should handle system messages', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 			messages: [
 				{ role: 'system', content: 'You are a helpful assistant.' },
 				{ role: 'user', content: 'Hello!' },
@@ -92,7 +92,7 @@ describe('Chat Handler', () => {
 
 	it('should handle max_tokens parameter', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 			messages: [{ role: 'user', content: 'Hello!' }],
 			max_tokens: 100,
 		});
@@ -113,7 +113,7 @@ describe('Chat Handler', () => {
 
 	it('should handle missing messages error', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 		});
 
 		const response = await chatHandler(mockRequest, mockEnv);
@@ -123,7 +123,7 @@ describe('Chat Handler', () => {
 
 	it('should handle empty messages error', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 			messages: [],
 		});
 
@@ -134,7 +134,7 @@ describe('Chat Handler', () => {
 
 	it('should handle temperature parameter', async () => {
 		const mockRequest = createMockRequest({
-			model: '@cf/qwen/qwen1.5-0.5b-chat',
+			model: '@cf/meta/llama-3.1-8b-instruct-fp8',
 			messages: [{ role: 'user', content: 'Hello!' }],
 			temperature: 0.7,
 		});
