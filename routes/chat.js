@@ -11,6 +11,7 @@ import {
 	DEFAULT_MODELS,
 	MODEL_CONTEXT_WINDOWS,
 	MODEL_CAPABILITIES,
+	MODEL_MAPPING,
 } from '../utils/models.js';
 import { processThink } from '../utils/format.js';
 
@@ -94,18 +95,21 @@ export const chatHandler = async (request, env) => {
 		if (request.headers.get('Content-Type') === 'application/json') {
 			const json = await request.json();
 
-			// Handle model selection - use real Cloudflare model names directly
+			// Handle model selection - support both OpenAI and Cloudflare model names
 			if (json?.model) {
 				// Use supported Cloudflare models from unified configuration
 				const supportedModels = MODEL_CATEGORIES.chat;
 
-				// Check if the provided model is supported
-				if (supportedModels.includes(json.model)) {
+				// First check if it's an OpenAI model name that needs mapping
+				if (MODEL_MAPPING[json.model]) {
+					model = MODEL_MAPPING[json.model];
+					console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
+				}
+				// Then check if the provided model is a supported Cloudflare model
+				else if (supportedModels.includes(json.model)) {
 					model = json.model;
 				} else {
-					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
-					);
+					throw new Error(`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`);
 				}
 			} else {
 				// Use default model if none provided
@@ -141,7 +145,8 @@ export const chatHandler = async (request, env) => {
 				max_tokens = Math.min(json.max_tokens, context_window); // Don't exceed context window
 			} else {
 				// Otherwise calculate a default based on model's context window
-				max_tokens = Math.floor(context_window * 0.7); // Use 70% of context window by default
+				// Cap at 16k tokens to avoid hitting Cloudflare's practical limits
+				max_tokens = Math.min(Math.floor(context_window * 0.7), 16384);
 			}
 
 			// Ensure max_tokens is at least 10 tokens
@@ -270,10 +275,7 @@ export const chatHandler = async (request, env) => {
 									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
 										console.log('[OSS Model Stream] Response chunk type:', typeof data.response);
 										if (typeof data.response === 'object' && data.response !== null) {
-											console.log(
-												'[OSS Model Stream] Response chunk keys:',
-												Object.keys(data.response),
-											);
+											console.log('[OSS Model Stream] Response chunk keys:', Object.keys(data.response));
 										}
 									}
 
@@ -282,17 +284,13 @@ export const chatHandler = async (request, env) => {
 									const actualContent =
 										typeof data.response === 'string'
 											? data.response
-											: data.response?.text ||
-												data.response?.content ||
-												JSON.stringify(data.response);
+											: data.response?.text || data.response?.content || JSON.stringify(data.response);
 
 									// Log a sample of what we're sending back
 									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
 										console.log(
 											'[OSS Model Stream] Extracted content:',
-											actualContent.length > 50
-												? actualContent.substring(0, 50) + '...'
-												: actualContent,
+											actualContent.length > 50 ? actualContent.substring(0, 50) + '...' : actualContent,
 										);
 									}
 
@@ -459,10 +457,7 @@ export const chatHandler = async (request, env) => {
 
 			// Process OSS model responses specifically (they have a different format)
 			let processedResp = aiResp;
-			if (
-				!json.stream &&
-				(model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b')
-			) {
+			if (!json.stream && (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b')) {
 				// For OSS models in non-streaming mode, we need to extract the response content
 				console.log('[OSS Model] Processing non-streaming response for', model);
 				console.log('[OSS Model] Raw response:', JSON.stringify(aiResp));
@@ -472,9 +467,7 @@ export const chatHandler = async (request, env) => {
 					// New format has output array with message objects
 					if (Array.isArray(aiResp.output)) {
 						// Find the message object with type 'message' and role 'assistant'
-						const assistantMessage = aiResp.output.find(
-							msg => msg.type === 'message' && msg.role === 'assistant',
-						);
+						const assistantMessage = aiResp.output.find(msg => msg.type === 'message' && msg.role === 'assistant');
 
 						if (assistantMessage && Array.isArray(assistantMessage.content)) {
 							// Extract text content from the content array
@@ -510,9 +503,7 @@ export const chatHandler = async (request, env) => {
 						processedResp =
 							typeof aiResp.response === 'string'
 								? aiResp.response
-								: aiResp.response?.text ||
-									aiResp.response?.content ||
-									JSON.stringify(aiResp.response);
+								: aiResp.response?.text || aiResp.response?.content || JSON.stringify(aiResp.response);
 					} else {
 						// Try to extract any text content from the response
 						processedResp = aiResp.text || aiResp.response || JSON.stringify(aiResp);
@@ -536,11 +527,7 @@ export const chatHandler = async (request, env) => {
 				// For OSS models, processedResp should already be the content string
 				// For other models, it might be the full response object
 				let contentToProcess = processedResp;
-				if (
-					typeof processedResp === 'object' &&
-					processedResp !== null &&
-					'response' in processedResp
-				) {
+				if (typeof processedResp === 'object' && processedResp !== null && 'response' in processedResp) {
 					contentToProcess = processedResp.response;
 				}
 
@@ -550,9 +537,7 @@ export const chatHandler = async (request, env) => {
 					if (typeof processedResp === 'object' && processedResp !== null) {
 						if (Array.isArray(processedResp.output)) {
 							// Look for output_text type objects in the output array
-							const outputTextItems = processedResp.output.filter(
-								item => item.type === 'output_text',
-							);
+							const outputTextItems = processedResp.output.filter(item => item.type === 'output_text');
 							if (outputTextItems.length > 0) {
 								// Extract text from output_text items
 								contentToProcess = outputTextItems.map(item => item.text).join('');
@@ -615,9 +600,7 @@ export const chatHandler = async (request, env) => {
 				if (env.CACHE_KV && cacheKey && shouldCache(aiParams) && !hasFunction) {
 					// Cache for 1 hour by default, can be configured
 					const cacheTtl =
-						env.CACHE_TTL_SECONDS && parseInt(env.CACHE_TTL_SECONDS) > 0
-							? parseInt(env.CACHE_TTL_SECONDS)
-							: 3600;
+						env.CACHE_TTL_SECONDS && parseInt(env.CACHE_TTL_SECONDS) > 0 ? parseInt(env.CACHE_TTL_SECONDS) : 3600;
 					await cacheResponse(env.CACHE_KV, cacheKey, response, cacheTtl);
 				}
 

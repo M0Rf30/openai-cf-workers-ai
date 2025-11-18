@@ -1,5 +1,5 @@
 import { storeVectors } from '../utils/vectorize.js';
-import { MODEL_CATEGORIES } from '../utils/models.js';
+import { MODEL_CATEGORIES, MODEL_MAPPING } from '../utils/models.js';
 
 // Supported Cloudflare models from unified configuration
 const SUPPORTED_MODELS = MODEL_CATEGORIES.embeddings;
@@ -21,16 +21,24 @@ export const embeddingsHandler = async (request, env) => {
 			return Response.json({ error: 'Missing required field: input' }, { status: 400 });
 		}
 
-		// Handle model selection
-		if (json.model && SUPPORTED_MODELS.includes(json.model)) {
-			model = json.model;
-		} else if (json.model && !SUPPORTED_MODELS.includes(json.model)) {
-			return Response.json(
-				{
-					error: `Model "${json.model}" not supported. Available models: ${SUPPORTED_MODELS.join(', ')}`,
-				},
-				{ status: 400 },
-			);
+		// Handle model selection - support both OpenAI and Cloudflare model names
+		if (json.model) {
+			// First check if it's an OpenAI model name that needs mapping
+			if (MODEL_MAPPING[json.model]) {
+				model = MODEL_MAPPING[json.model];
+				console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
+			}
+			// Then check if the provided model is a supported Cloudflare model
+			else if (SUPPORTED_MODELS.includes(json.model)) {
+				model = json.model;
+			} else {
+				return Response.json(
+					{
+						error: `Model "${json.model}" not supported. Available models: ${SUPPORTED_MODELS.join(', ')}`,
+					},
+					{ status: 400 },
+				);
+			}
 		}
 
 		// Handle pooling method (Cloudflare specific feature)
@@ -45,10 +53,7 @@ export const embeddingsHandler = async (request, env) => {
 		if (typeof inputText === 'string') {
 			inputText = [inputText];
 		} else if (!Array.isArray(inputText)) {
-			return Response.json(
-				{ error: 'Input must be a string or array of strings' },
-				{ status: 400 },
-			);
+			return Response.json({ error: 'Input must be a string or array of strings' }, { status: 400 });
 		}
 
 		// Validate input length
@@ -64,10 +69,7 @@ export const embeddingsHandler = async (request, env) => {
 		// Validate each text item
 		for (const text of inputText) {
 			if (typeof text !== 'string' || text.trim().length === 0) {
-				return Response.json(
-					{ error: 'All input items must be non-empty strings' },
-					{ status: 400 },
-				);
+				return Response.json({ error: 'All input items must be non-empty strings' }, { status: 400 });
 			}
 		}
 
@@ -124,10 +126,7 @@ export const embeddingsHandler = async (request, env) => {
 
 		// Handle specific Cloudflare AI errors
 		if (e.message?.includes('rate limit')) {
-			return Response.json(
-				{ error: 'Rate limit exceeded. Please try again later.' },
-				{ status: 429 },
-			);
+			return Response.json({ error: 'Rate limit exceeded. Please try again later.' }, { status: 429 });
 		}
 
 		if (e.message?.includes('invalid input')) {

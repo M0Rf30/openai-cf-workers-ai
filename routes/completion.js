@@ -1,4 +1,4 @@
-import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
+import { MODEL_CATEGORIES, DEFAULT_MODELS, MODEL_MAPPING } from '../utils/models.js';
 import { processThink } from '../utils/format.js';
 
 import { MODEL_CONTEXT_WINDOWS, calculateDefaultMaxTokens } from '../utils/models.js';
@@ -16,13 +16,18 @@ export const completionHandler = async (request, env) => {
 		if (request.headers.get('Content-Type') === 'application/json') {
 			const json = await request.json();
 
-			// Handle model selection - use real Cloudflare model names directly
+			// Handle model selection - support both OpenAI and Cloudflare model names
 			if (json?.model) {
 				// Use supported Cloudflare models from unified configuration
 				const supportedModels = MODEL_CATEGORIES.completion;
 
-				// Check if the provided model is supported
-				if (supportedModels.includes(json.model)) {
+				// First check if it's an OpenAI model name that needs mapping
+				if (MODEL_MAPPING[json.model]) {
+					model = MODEL_MAPPING[json.model];
+					console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
+				}
+				// Then check if the provided model is a supported Cloudflare model
+				else if (supportedModels.includes(json.model)) {
 					model = json.model;
 				} else {
 					// Fallback to environment mapper for backward compatibility
@@ -31,9 +36,7 @@ export const completionHandler = async (request, env) => {
 
 					// If still not in supported list, throw error
 					if (!supportedModels.includes(model)) {
-						throw new Error(
-							`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
-						);
+						throw new Error(`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`);
 					}
 				}
 			} else {
@@ -276,9 +279,7 @@ export const completionHandler = async (request, env) => {
 							responseText =
 								typeof aiResp.response === 'string'
 									? aiResp.response
-									: aiResp.response?.text ||
-										aiResp.response?.content ||
-										JSON.stringify(aiResp.response);
+									: aiResp.response?.text || aiResp.response?.content || JSON.stringify(aiResp.response);
 						} else {
 							// Try to extract any text content from the response
 							responseText = aiResp.text || aiResp.response || JSON.stringify(aiResp);

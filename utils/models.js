@@ -258,7 +258,7 @@ export const MODEL_MAPPING = {
 
 // Reverse mapping for API responses
 export const REVERSE_MODEL_MAPPING = Object.fromEntries(
-	Object.entries(MODEL_MAPPING).map(([openai, cf]) => [cf, openai])
+	Object.entries(MODEL_MAPPING).map(([openai, cf]) => [cf, openai]),
 );
 
 // Model capabilities

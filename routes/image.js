@@ -1,7 +1,7 @@
 import { uint8ArrayToBase64 } from '../utils/converters';
 import { uuidv4 } from '../utils/uuid';
 import { streamToBuffer } from '../utils/stream';
-import { MODEL_CATEGORIES, DEFAULT_MODELS } from '../utils/models.js';
+import { MODEL_CATEGORIES, DEFAULT_MODELS, MODEL_MAPPING } from '../utils/models.js';
 
 export const imageGenerationHandler = async (request, env) => {
 	let model = '@cf/black-forest-labs/flux-1-schnell'; // Default model
@@ -24,18 +24,21 @@ export const imageGenerationHandler = async (request, env) => {
 				}
 			}
 
-			// Handle model selection - use real Cloudflare model names directly
+			// Handle model selection - support both OpenAI and Cloudflare model names
 			if (json?.model) {
 				// Use supported Cloudflare models from unified configuration
 				const supportedModels = MODEL_CATEGORIES.image_generation;
 
-				// Check if the provided model is supported
-				if (supportedModels.includes(json.model)) {
+				// First check if it's an OpenAI model name that needs mapping
+				if (MODEL_MAPPING[json.model]) {
+					model = MODEL_MAPPING[json.model];
+					console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
+				}
+				// Then check if the provided model is a supported Cloudflare model
+				else if (supportedModels.includes(json.model)) {
 					model = json.model;
 				} else {
-					throw new Error(
-						`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`,
-					);
+					throw new Error(`Unsupported model: ${json.model}. Supported models: ${supportedModels.join(', ')}`);
 				}
 			} else {
 				// Use default model if none provided
