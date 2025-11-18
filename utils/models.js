@@ -38,6 +38,23 @@ export const MODEL_CONTEXT_WINDOWS = {
 	'@cf/qwen/qwq-32b': 32768, // 32k tokens (reasoning model)
 	'@cf/qwen/qwen2.5-coder-32b-instruct': 32768, // 32k tokens (coder model)
 
+	// === DeepSeek Models ===
+	'@cf/deepseek-ai/deepseek-r1-distill-qwen-32b': 32768, // 32k tokens (reasoning model)
+
+	// === Microsoft Models ===
+	'@cf/microsoft/phi-2': 2048, // 2k tokens
+
+	// === OpenAI Models ===
+	'@cf/openai/gpt-oss-120b': 8192, // 8k tokens
+	'@cf/openai/gpt-oss-20b': 8192, // 8k tokens
+
+	// === Other Text Generation Models ===
+	'@cf/unum/uform-gen2-qwen-500m': 2048, // 2k tokens (vision-language model)
+	'@cf/defog/sqlcoder-7b-2': 8192, // 8k tokens
+	'@cf/facebook/bart-large-cnn': 1024, // 1k tokens (summarization)
+	'@hf/mistral/mistral-7b-instruct-v0.2': 32768, // 32k tokens
+	'@hf/nousresearch/hermes-2-pro-mistral-7b': 8192, // 8k tokens
+	'@hf/meta-llama/meta-llama-3-8b-instruct': 8192, // 8k tokens
 	'@hf/google/gemma-7b-it': 8192, // 8k tokens
 
 	// === Embedding Models (Input Context) ===
@@ -53,8 +70,8 @@ export const MODEL_CONTEXT_WINDOWS = {
 	'@cf/openai/whisper-large-v3-turbo': 30, // 30 seconds of audio
 	'@cf/myshell-ai/melotts': 4000, // ~4k characters of text input
 	'@cf/meta/m2m100-1.2b': 1024, // 1k tokens
-	'@cf/deepgram/aura-1': 0, // Audio model
-	'@cf/deepgram/nova-3': 0, // Audio model
+	'@cf/deepgram/aura-1': 4000, // ~4k characters of text input (TTS)
+	'@cf/deepgram/nova-3': 30, // 30 seconds of audio (STT)
 
 	// === Vision Models ===
 	'@cf/llava-hf/llava-1.5-7b-hf': 4096, // 4k tokens + image
@@ -70,8 +87,8 @@ export const MODEL_CONTEXT_WINDOWS = {
 	'@cf/runwayml/stable-diffusion-v1-5-inpainting': 77, // 77 tokens prompt limit
 	'@cf/stabilityai/stable-diffusion-xl-base-1.0': 77, // 77 tokens prompt limit
 	'@cf/lykon/dreamshaper-8-lcm': 77, // 77 tokens prompt limit
-	'@cf/leonardo/lucid-origin': 0, // Image generation model
-	'@cf/leonardo/phoenix-1.0': 0, // Image generation model
+	'@cf/leonardo/lucid-origin': 77, // 77 tokens prompt limit
+	'@cf/leonardo/phoenix-1.0': 77, // 77 tokens prompt limit
 
 	// === Object Detection Models ===
 	'@cf/facebook/detr-resnet-50': 1, // Single image

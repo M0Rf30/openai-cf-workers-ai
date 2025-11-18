@@ -2,6 +2,39 @@
 
 Simple test scripts for each API endpoint.
 
+## Model Update Script
+
+**`update-models.js`** - Auto-update Cloudflare Workers AI models
+
+Fetches the latest models from the Cloudflare Workers AI API and generates/updates the `utils/models.js` configuration file.
+
+**Usage:**
+
+```bash
+# Normal mode (updates files)
+npm run update-models
+
+# Dry-run mode (preview changes without writing)
+npm run update-models:dry-run
+```
+
+**Environment Variables Required:**
+
+- `CLOUDFLARE_ACCOUNT_ID` - Your Cloudflare account ID
+- `CLOUDFLARE_API_TOKEN` - Your Cloudflare API token with Workers AI permissions
+
+**Features:**
+
+- Fetches models directly from Cloudflare's catalog API
+- Filters out deprecated models
+- Organizes models by category and capability
+- Preserves manual context window overrides
+- Generates type-safe helper functions
+- Maintains OpenAI-compatible model mappings
+
+**Automation:**
+This script runs automatically via GitHub Actions every Monday at 9 AM UTC. See `.github/workflows/update-models.yml` for details.
+
 ## Available Scripts
 
 - `test_all.sh` - Run all tests

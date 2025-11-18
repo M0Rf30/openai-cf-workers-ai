@@ -23,6 +23,8 @@
 		"test:models": "chmod +x scripts/*.sh && scripts/test_models.sh",
 		"test:rag": "chmod +x scripts/*.sh && scripts/test_rag.sh",
 		"test:coverage": "vitest run --coverage",
+		"update-models": "node scripts/update-models.js",
+		"update-models:dry-run": "node scripts/update-models.js --dry-run",
 		"lint": "eslint *.js routes/**/*.js utils/**/*.js",
 		"lint:fix": "eslint --fix *.js routes/**/*.js utils/**/*.js",
 		"format": "prettier --write \"**/*.{js,json,md}\"",
