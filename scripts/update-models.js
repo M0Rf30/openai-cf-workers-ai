@@ -17,6 +17,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,9 +126,32 @@ const TASK_TO_CATEGORY_MAP = {
 };
 
 /**
- * Fetch models from Cloudflare Workers AI API
+ * Fetch models from Cloudflare Workers AI using wrangler CLI
  */
 async function fetchCloudflareModels() {
+	console.log('Fetching models from Cloudflare using wrangler CLI...');
+
+	try {
+		// Use wrangler to fetch models (doesn't require API token for read operations)
+		const output = execSync('npx wrangler ai models --json', {
+			encoding: 'utf-8',
+			stdio: ['pipe', 'pipe', 'pipe'],
+		});
+
+		const models = JSON.parse(output);
+		console.log(`✓ Fetched ${models.length} models from Cloudflare`);
+		return models;
+	} catch (error) {
+		// If wrangler fails, try the API approach (requires credentials)
+		console.log('Wrangler CLI failed, trying API approach...');
+		return fetchCloudflareModelsViaAPI();
+	}
+}
+
+/**
+ * Fallback: Fetch models from Cloudflare Workers AI API
+ */
+async function fetchCloudflareModelsViaAPI() {
 	const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
 	const apiToken = process.env.CLOUDFLARE_API_TOKEN;
 
