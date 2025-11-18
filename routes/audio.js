@@ -35,9 +35,7 @@ function validateModel(type, modelName) {
 		});
 		const allAvailable = [...availableOpenAINames, ...AVAILABLE_MODELS[type]];
 
-		throw new Error(
-			`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`,
-		);
+		throw new Error(`Invalid ${type} model: ${modelName}. Available models: ${allAvailable.join(', ')}`);
 	}
 	return cloudflareModel;
 }
@@ -551,12 +549,22 @@ export const speechHandler = async (request, env) => {
 		// Validate model
 		const modelPath = validateModel('tts', model);
 
-		// Prepare input for Cloudflare Workers AI MeloTTS
-		// According to documentation, MeloTTS expects 'prompt' and 'lang' parameters
-		const aiInput = {
-			prompt: input, // MeloTTS uses 'prompt' not 'text'
-			lang: VOICE_MAPPING[voice] || 'en', // Map voice to language code
-		};
+		// Prepare input based on the model
+		// Different TTS models expect different parameter formats
+		let aiInput;
+
+		if (modelPath === '@cf/deepgram/aura-1') {
+			// Deepgram Aura expects 'text' parameter
+			aiInput = {
+				text: input,
+			};
+		} else {
+			// MeloTTS expects 'prompt' and 'lang' parameters
+			aiInput = {
+				prompt: input,
+				lang: VOICE_MAPPING[voice] || 'en', // Map voice to language code
+			};
+		}
 
 		// Note: MeloTTS doesn't support speed parameter according to the documentation
 		// If speed is needed, it would require post-processing
