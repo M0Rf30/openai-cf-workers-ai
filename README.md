@@ -254,27 +254,29 @@ const response = await fetch('https://your-worker.workers.dev/v1/chat/completion
 	body: JSON.stringify({
 		model: 'gpt-4',
 		messages: [{ role: 'user', content: 'What is the weather in New York?' }],
-		tools: [{
-			type: 'function',
-			function: {
-				name: 'get_current_weather',
-				description: 'Get the current weather in a given location',
-				parameters: {
-					type: 'object',
-					properties: {
-						location: {
-							type: 'string',
-							description: 'The city and state, e.g. San Francisco, CA',
+		tools: [
+			{
+				type: 'function',
+				function: {
+					name: 'get_current_weather',
+					description: 'Get the current weather in a given location',
+					parameters: {
+						type: 'object',
+						properties: {
+							location: {
+								type: 'string',
+								description: 'The city and state, e.g. San Francisco, CA',
+							},
+							unit: {
+								type: 'string',
+								enum: ['celsius', 'fahrenheit'],
+							},
 						},
-						unit: {
-							type: 'string',
-							enum: ['celsius', 'fahrenheit'],
-						},
+						required: ['location'],
 					},
-					required: ['location'],
 				},
-			}
-		}],
+			},
+		],
 		tool_choice: 'auto',
 	}),
 });
@@ -291,21 +293,23 @@ const response = await fetch('https://your-worker.workers.dev/v1/chat/completion
 	},
 	body: JSON.stringify({
 		model: 'gpt-4o',
-		messages: [{
-			role: 'user',
-			content: [
-				{
-					type: 'text',
-					text: 'What is in this image?',
-				},
-				{
-					type: 'image_url',
-					image_url: {
-						url: 'https://example.com/image.jpg',
+		messages: [
+			{
+				role: 'user',
+				content: [
+					{
+						type: 'text',
+						text: 'What is in this image?',
 					},
-				},
-			],
-		}],
+					{
+						type: 'image_url',
+						image_url: {
+							url: 'https://example.com/image.jpg',
+						},
+					},
+				],
+			},
+		],
 	}),
 });
 ```
@@ -447,11 +451,11 @@ Test scripts are located in the `scripts/` directory with a flat structure.
 │   ├── errors.js                  # Error handling and formatting
 │   ├── format.js                  # Response formatting utilities
 │   ├── functionCalling.js         # Function calling (tools) processing
+│   ├── ids.js                     # ID generation utilities (UUID, random IDs)
 │   ├── models.js                  # Model configuration and mappings
 │   ├── r2Storage.js               # Cloudflare R2 storage utilities
-│   ├── rateLimiting.js            # Rate limiting middleware
 │   ├── stream.js                  # Streaming response processing
-│   └── uuid.js                    # UUID generation utilities
+│   └── vectorize.js               # Cloudflare Vectorize integration
 ├── tests/                          # Test suites
 │   ├── unit/                      # Unit tests for all modules
 │   │   ├── audio.test.js         # Tests for audio endpoints

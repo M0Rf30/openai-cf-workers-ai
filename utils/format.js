@@ -1,4 +1,5 @@
 // Response formatting utilities for OpenAI-compatible API
+import { generateId } from './ids.js';
 
 // Utility function to convert ArrayBuffer to base64 string
 export function arrayBufferToBase64(buffer) {
@@ -218,8 +219,7 @@ export function formatTranscription(response, format, options = {}) {
 		return response.text || '';
 
 	case 'srt': {
-		const srtSegments =
-				segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
+		const srtSegments = segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
 		if (srtSegments.length > 0) {
 			let srtContent = '';
 			srtSegments.forEach((segment, index) => {
@@ -233,8 +233,7 @@ export function formatTranscription(response, format, options = {}) {
 	}
 
 	case 'vtt': {
-		const vttSegments =
-				segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
+		const vttSegments = segments && segments.length > 0 ? segments : createSegmentsFromWords(words || []);
 		if (vttSegments.length > 0) {
 			let vttContent = 'WEBVTT\n\n';
 			vttSegments.forEach(segment => {
@@ -287,16 +286,7 @@ export function processThink(responseText) {
 	return responseText;
 }
 
-// Utility functions
-function generateId(length = 29) {
-	const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-	let result = '';
-	for (let i = 0; i < length; i++) {
-		result += chars.charAt(Math.floor(Math.random() * chars.length));
-	}
-	return result;
-}
-
+// Utility function to estimate token count
 function estimateTokens(text) {
 	if (!text) return 0;
 	// Rough estimation: ~4 characters per token

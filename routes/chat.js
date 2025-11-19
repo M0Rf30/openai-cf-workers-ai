@@ -103,7 +103,6 @@ export const chatHandler = async (request, env) => {
 				// First check if it's an OpenAI model name that needs mapping
 				if (MODEL_MAPPING[json.model]) {
 					model = MODEL_MAPPING[json.model];
-					console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
 				}
 				// Then check if the provided model is a supported Cloudflare model
 				else if (supportedModels.includes(json.model)) {
@@ -191,18 +190,6 @@ export const chatHandler = async (request, env) => {
 				toolChoice = json?.function_call || 'auto';
 			}
 
-			// Log parameters for debugging
-			console.log('AI Parameters:', {
-				model,
-				max_tokens,
-				temperature,
-				topP,
-				messageCount: messages.length,
-				streaming: json.stream,
-				toolsCount: tools?.length || 0,
-				toolChoice,
-			});
-
 			let buffer = '';
 			const decoder = new TextDecoder();
 			const encoder = new TextEncoder();
@@ -271,28 +258,12 @@ export const chatHandler = async (request, env) => {
 
 								const data = JSON.parse(content);
 								if (data.response) {
-									// Debug OSS model streaming responses
-									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
-										console.log('[OSS Model Stream] Response chunk type:', typeof data.response);
-										if (typeof data.response === 'object' && data.response !== null) {
-											console.log('[OSS Model Stream] Response chunk keys:', Object.keys(data.response));
-										}
-									}
-
 									// For OSS models, extract the actual text response instead of JSONifying the whole data object
 									// The response field contains the actual text content we need to send to the client
 									const actualContent =
 										typeof data.response === 'string'
 											? data.response
 											: data.response?.text || data.response?.content || JSON.stringify(data.response);
-
-									// Log a sample of what we're sending back
-									if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
-										console.log(
-											'[OSS Model Stream] Extracted content:',
-											actualContent.length > 50 ? actualContent.substring(0, 50) + '...' : actualContent,
-										);
-									}
 
 									const newChunk =
 										'data: ' +
@@ -356,14 +327,6 @@ export const chatHandler = async (request, env) => {
 				topP,
 			};
 
-			// Log the parameters we're passing to ensure they're correct
-			console.log('AI Parameters being sent:', {
-				model,
-				max_tokens: aiParams.max_tokens,
-				temperature: aiParams.temperature,
-				topP: aiParams.topP,
-			});
-
 			// Store original messages before any processing that might be skipped
 			const originalMessages = [...messages];
 
@@ -382,7 +345,6 @@ export const chatHandler = async (request, env) => {
 				} else {
 					// If tools are provided but the model doesn't support function calling,
 					// remove tools and toolChoice from parameters and revert messages
-					console.warn(`Model ${model} does not support function calling. Ignoring tools.`);
 					tools = null;
 					toolChoice = null;
 					// Revert processedMessages to original (multimodal processed) state
@@ -424,7 +386,6 @@ export const chatHandler = async (request, env) => {
 				cachedResponse = await getCachedResponse(env.CACHE_KV, cacheKey);
 
 				if (cachedResponse) {
-					console.log('Returning cached response');
 					return Response.json({
 						...cachedResponse,
 						id: uuid, // Use new UUID for each request
@@ -443,24 +404,13 @@ export const chatHandler = async (request, env) => {
 				finalParams.max_tokens = Math.floor(context_window * 0.7);
 			}
 
-			// Log the final parameters before running the AI model
-			console.log('Running AI model with:', { model, finalParams });
-			console.log('Final AI parameters (JSON):', JSON.stringify(finalParams, null, 2));
 			// Run the AI model with validated parameters
 			const aiResp = await env.AI.run(model, finalParams);
-
-			// Log response info for debugging
-			console.log('AI Raw Response:', aiResp);
-			if (!json.stream && aiResp.result && aiResp.result.response) {
-				console.log('AI Response length:', aiResp.result.response.length);
-			}
 
 			// Process OSS model responses specifically (they have a different format)
 			let processedResp = aiResp;
 			if (!json.stream && (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b')) {
 				// For OSS models in non-streaming mode, we need to extract the response content
-				console.log('[OSS Model] Processing non-streaming response for', model);
-				console.log('[OSS Model] Raw response:', JSON.stringify(aiResp));
 
 				// Handle the new response format from Cloudflare's OSS models
 				if (typeof aiResp === 'object' && aiResp !== null) {

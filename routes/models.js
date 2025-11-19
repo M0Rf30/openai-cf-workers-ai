@@ -1,5 +1,4 @@
 import { json } from 'itty-router';
-import { MODEL_MAPPING } from '../utils/models.js';
 
 const getModels = async env => {
 	const url = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/models/search?hide_experimental=false`;

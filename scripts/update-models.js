@@ -129,8 +129,6 @@ const TASK_TO_CATEGORY_MAP = {
  * Fetch models from Cloudflare Workers AI using wrangler CLI
  */
 async function fetchCloudflareModels() {
-	console.log('Fetching models from Cloudflare using wrangler CLI...');
-
 	try {
 		// Use wrangler to fetch models (doesn't require API token for read operations)
 		const output = execSync('npx wrangler ai models --json', {
@@ -143,7 +141,6 @@ async function fetchCloudflareModels() {
 		return models;
 	} catch (error) {
 		// If wrangler fails, try the API approach (requires credentials)
-		console.log('Wrangler CLI failed, trying API approach...');
 		return fetchCloudflareModelsViaAPI();
 	}
 }
@@ -160,9 +157,6 @@ async function fetchCloudflareModelsViaAPI() {
 	}
 
 	const url = `${API_BASE}/accounts/${accountId}/ai/models/catalog`;
-
-	console.log('Fetching models from Cloudflare API...');
-	console.log(`URL: ${url}`);
 
 	const response = await fetch(url, {
 		headers: {
@@ -261,7 +255,6 @@ function processModels(models) {
 
 		// Skip deprecated or beta models marked as deprecated
 		if (model.properties?.deprecated) {
-			console.log(`Skipping deprecated model: ${modelId}`);
 			continue;
 		}
 
@@ -471,19 +464,15 @@ export const getModelRecommendation = useCase => {
  */
 async function main() {
 	try {
-		console.log('🚀 Starting Cloudflare Workers AI model update...\n');
+		console.log('🚀 Starting model update...\n');
 
 		// Fetch models from API
 		const models = await fetchCloudflareModels();
-		console.log(`✅ Fetched ${models.length} models from Cloudflare API\n`);
 
 		// Process models
-		console.log('📊 Processing models...');
 		const processedData = processModels(models);
-		console.log(`✅ Processed ${Object.keys(processedData.modelContextWindows).length} active models\n`);
 
 		// Generate file content
-		console.log('📝 Generating models.js file...');
 		const fileContent = generateModelsFile(processedData);
 
 		if (DRY_RUN) {
@@ -494,14 +483,13 @@ async function main() {
 		} else {
 			// Write to file
 			fs.writeFileSync(MODELS_OUTPUT_PATH, fileContent, 'utf8');
-			console.log(`✅ Successfully wrote models to: ${MODELS_OUTPUT_PATH}\n`);
+			console.log(`✅ Successfully wrote models to: ${MODELS_OUTPUT_PATH}`);
 		}
 
 		// Print summary statistics
-		console.log('📈 Summary Statistics:');
+		console.log('📈 Summary:');
 		console.log(`   Total models: ${Object.keys(processedData.modelContextWindows).length}`);
 		console.log(`   Categories: ${Object.keys(processedData.modelCategories).length}`);
-		console.log(`   Models with capabilities: ${Object.keys(processedData.modelCapabilities).length}`);
 		console.log('\n✨ Model update complete!\n');
 	} catch (error) {
 		console.error('❌ Error updating models:', error.message);

@@ -11,7 +11,6 @@
 export async function storeVectors(vectorIndex, vectors) {
 	try {
 		const result = await vectorIndex.upsert(vectors);
-		console.log(`Stored ${vectors.length} vectors in Vectorize`);
 		return {
 			success: true,
 			count: result.count,
@@ -48,10 +47,6 @@ export async function searchVectors(vectorIndex, queryVector, options = {}) {
 		// Filter by score threshold
 		const filteredResults = results.matches.filter(match => match.score >= scoreThreshold);
 
-		console.log(
-			`Found ${filteredResults.length} similar vectors above threshold ${scoreThreshold}`,
-		);
-
 		return filteredResults.map(match => ({
 			id: match.id,
 			score: match.score,
@@ -83,7 +78,6 @@ export async function processAndStoreDocument(env, text, metadata = {}, options 
 
 		// Split text into chunks
 		const chunks = splitTextIntoChunks(text, chunkSize, chunkOverlap);
-		console.log(`Split document into ${chunks.length} chunks`);
 
 		// Generate embeddings for all chunks
 		const vectors = [];
@@ -144,12 +138,7 @@ export async function processAndStoreDocument(env, text, metadata = {}, options 
  */
 export async function performRAGSearch(env, query, options = {}) {
 	try {
-		const {
-			model = '@cf/baai/bge-base-en-v1.5',
-			topK = 5,
-			scoreThreshold = 0.7,
-			namespace = 'documents',
-		} = options;
+		const { model = '@cf/baai/bge-base-en-v1.5', topK = 5, scoreThreshold = 0.7, namespace = 'documents' } = options;
 
 		// Generate query embedding
 		const queryEmbedding = await env.AI.run(model, {
@@ -227,23 +216,17 @@ function splitTextIntoChunks(text, chunkSize = 1000, overlap = 200) {
  * @param {Object} filter - Metadata filter for deletion
  * @returns {Promise<Object>} Deletion result
  */
-export async function deleteVectorsByFilter(vectorIndex, filter) {
-	try {
-		// Note: Vectorize may not support bulk deletion by filter yet
-		// This is a placeholder for when the feature becomes available
-		console.log('Deleting vectors with filter:', filter);
+export async function deleteVectorsByFilter(_vectorIndex, _filter) {
+	// Note: Vectorize may not support bulk deletion by filter yet
+	// This is a placeholder for when the feature becomes available
 
-		// For now, you might need to query first, then delete by IDs
-		// const results = await vectorIndex.query(someVector, { filter, topK: 1000 });
-		// const ids = results.matches.map(match => match.id);
-		// const deletion = await vectorIndex.deleteByIds(ids);
+	// For now, you might need to query first, then delete by IDs
+	// const results = await _vectorIndex.query(someVector, { filter: _filter, topK: 1000 });
+	// const ids = results.matches.map(match => match.id);
+	// const deletion = await _vectorIndex.deleteByIds(ids);
 
-		return {
-			success: true,
-			message: 'Deletion functionality pending Vectorize API support',
-		};
-	} catch (error) {
-		console.error('Failed to delete vectors:', error);
-		throw error;
-	}
+	return {
+		success: true,
+		message: 'Deletion functionality pending Vectorize API support',
+	};
 }

@@ -1,5 +1,5 @@
 import { uint8ArrayToBase64 } from '../utils/converters';
-import { uuidv4 } from '../utils/uuid';
+import { uuidv4 } from '../utils/ids';
 import { streamToBuffer } from '../utils/stream';
 import { MODEL_CATEGORIES, DEFAULT_MODELS, MODEL_MAPPING } from '../utils/models.js';
 
@@ -32,7 +32,6 @@ export const imageGenerationHandler = async (request, env) => {
 				// First check if it's an OpenAI model name that needs mapping
 				if (MODEL_MAPPING[json.model]) {
 					model = MODEL_MAPPING[json.model];
-					console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
 				}
 				// Then check if the provided model is a supported Cloudflare model
 				else if (supportedModels.includes(json.model)) {

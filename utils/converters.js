@@ -10,19 +10,25 @@ export function uint8ArrayToBase64(uint8Array) {
 	return btoa(string);
 }
 
+/**
+ * Convert image URL to data URL
+ * Fetches an external image and converts it to a base64 data URL for use with AI models
+ * @param {string} imageUrl - The URL of the image to convert
+ * @returns {Promise<string>} Data URL with base64 encoded image
+ * @throws {Error} If URL is invalid or fetch fails
+ */
 export async function convertImageToDataURL(imageUrl) {
-	console.log('Attempting to convert image URL:', imageUrl);
 	try {
 		// Validate the URL before fetching
 		new URL(imageUrl);
-		console.log('URL validated:', imageUrl);
 
 		const response = await fetch(imageUrl);
-		console.log('Fetch response status:', response.status);
 		if (!response.ok) {
 			console.error(`Failed to fetch image URL: ${response.status} ${response.statusText}`);
 			throw new Error(`Failed to fetch image URL: ${response.statusText}`);
 		}
+
+		// Get content type and convert to base64
 		const contentType = response.headers.get('content-type') || 'image/jpeg';
 		const buffer = await response.arrayBuffer();
 		let binary = '';
@@ -33,7 +39,6 @@ export async function convertImageToDataURL(imageUrl) {
 		}
 		const base64 = btoa(binary);
 		const dataUrl = `data:${contentType};base64,${base64}`;
-		console.log('Successfully converted to data URL (first 50 chars):', dataUrl.substring(0, 50));
 		return dataUrl;
 	} catch (error) {
 		console.error('Error in convertImageToDataURL:', error);

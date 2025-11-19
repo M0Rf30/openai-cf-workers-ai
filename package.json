@@ -41,10 +41,7 @@
 	"author": "",
 	"license": "MIT",
 	"dependencies": {
-		"@ai-sdk/openai": "^2.0.14",
-		"context-optimizer-mcp-server": "^1.0.2",
-		"itty-router": "^5.0.18",
-		"openai": "^5.12.2"
+		"itty-router": "^5.0.18"
 	},
 	"devDependencies": {
 		"eslint": "^9.0.0",

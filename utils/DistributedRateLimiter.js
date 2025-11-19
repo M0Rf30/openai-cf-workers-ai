@@ -3,6 +3,14 @@
  *
  * Tracks request counts using Cloudflare Durable Objects for distributed rate limiting.
  * Maintains request timestamps and enforces limits across all worker instances.
+ *
+ * NOTE: This class is exported in index.js but rate limiting is currently DISABLED.
+ * To enable rate limiting, you must:
+ * 1. Uncomment the durable_objects bindings in wrangler.toml
+ * 2. Uncomment the migrations section in wrangler.toml
+ * 3. Add rate limiting middleware to your routes
+ *
+ * This code is kept for future use when rate limiting infrastructure is configured.
  */
 
 export class DistributedRateLimiter {

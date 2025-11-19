@@ -26,7 +26,6 @@ export const embeddingsHandler = async (request, env) => {
 			// First check if it's an OpenAI model name that needs mapping
 			if (MODEL_MAPPING[json.model]) {
 				model = MODEL_MAPPING[json.model];
-				console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
 			}
 			// Then check if the provided model is a supported Cloudflare model
 			else if (SUPPORTED_MODELS.includes(json.model)) {
@@ -95,7 +94,6 @@ export const embeddingsHandler = async (request, env) => {
 				}));
 
 				await storeVectors(env.VECTOR_INDEX, vectors);
-				console.log(`Stored ${vectors.length} embeddings in Vectorize`);
 			} catch (vectorizeError) {
 				console.error('Failed to store in Vectorize:', vectorizeError);
 				// Continue with the response even if Vectorize storage fails

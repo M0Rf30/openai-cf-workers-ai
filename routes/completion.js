@@ -24,7 +24,6 @@ export const completionHandler = async (request, env) => {
 				// First check if it's an OpenAI model name that needs mapping
 				if (MODEL_MAPPING[json.model]) {
 					model = MODEL_MAPPING[json.model];
-					console.log(`Mapped OpenAI model ${json.model} to Cloudflare model ${model}`);
 				}
 				// Then check if the provided model is a supported Cloudflare model
 				else if (supportedModels.includes(json.model)) {
@@ -112,16 +111,6 @@ export const completionHandler = async (request, env) => {
 					? Math.max(0, Math.min(json.top_p, 1)) // Clamp between 0 and 1
 					: 0.9; // Default top_p
 
-			// Log parameters for debugging
-			console.log('AI Parameters:', {
-				model,
-				maxTokens,
-				temperature,
-				topP,
-				promptLength: json.prompt.length,
-				streaming: json.stream,
-			});
-
 			// Handle streaming response
 			if (json.stream) {
 				let buffer = '';
@@ -162,7 +151,6 @@ export const completionHandler = async (request, env) => {
 							try {
 								if (line.startsWith('data: ')) {
 									const content = line.slice('data: '.length);
-									console.log(content);
 									const doneflag = content.trim() == '[DONE]';
 									if (doneflag) {
 										controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -241,17 +229,9 @@ export const completionHandler = async (request, env) => {
 				// Run the AI model with configured parameters
 				const aiResp = await env.AI.run(model, aiParams);
 
-				// Log response info for debugging
-				console.log('AI Raw Response:', aiResp);
-				if (aiResp.response) {
-					console.log('AI Response length:', aiResp.response.length);
-				}
-
 				// Process OSS model responses specifically (they have a different format)
 				let responseText = '';
 				if (model === '@cf/openai/gpt-oss-120b' || model === '@cf/openai/gpt-oss-20b') {
-					console.log('[OSS Model Completion] Raw response:', JSON.stringify(aiResp));
-
 					// Handle the new response format from Cloudflare's OSS models
 					if (typeof aiResp === 'object' && aiResp !== null) {
 						// New format has output array with message objects

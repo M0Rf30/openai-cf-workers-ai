@@ -39,8 +39,6 @@ export async function cacheResponse(kv, cacheKey, response, ttlSeconds = 3600) {
 		await kv.put(cacheKey, JSON.stringify(cacheData), {
 			expirationTtl: ttlSeconds,
 		});
-
-		console.log(`Cached response with key: ${cacheKey}, TTL: ${ttlSeconds}s`);
 	} catch (error) {
 		console.error('Failed to cache response:', error);
 	}
@@ -60,8 +58,6 @@ export async function getCachedResponse(kv, cacheKey) {
 		}
 
 		const cacheData = JSON.parse(cached);
-		console.log(`Cache hit for key: ${cacheKey}, cached ${Date.now() - cacheData.cached_at}ms ago`);
-
 		return cacheData.response;
 	} catch (error) {
 		console.error('Failed to retrieve cached response:', error);

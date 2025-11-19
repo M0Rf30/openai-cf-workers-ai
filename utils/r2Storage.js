@@ -25,8 +25,6 @@ export async function storeFile(bucket, key, data, metadata = {}) {
 
 		const result = await bucket.put(key, data, options);
 
-		console.log(`File stored in R2: ${key}, etag: ${result.etag}`);
-
 		return {
 			success: true,
 			key,
@@ -53,7 +51,6 @@ export async function getFile(bucket, key) {
 			return null;
 		}
 
-		console.log(`File retrieved from R2: ${key}, size: ${object.size}`);
 		return object;
 	} catch (error) {
 		console.error('Failed to retrieve file from R2:', error);
@@ -70,7 +67,6 @@ export async function getFile(bucket, key) {
 export async function deleteFile(bucket, key) {
 	try {
 		await bucket.delete(key);
-		console.log(`File deleted from R2: ${key}`);
 		return true;
 	} catch (error) {
 		console.error('Failed to delete file from R2:', error);
@@ -138,7 +134,6 @@ export async function getCachedFile(request) {
 		const cache = caches.default;
 		const cached = await cache.match(request);
 		if (cached) {
-			console.log('File served from Cache API');
 			return cached;
 		}
 		return null;
