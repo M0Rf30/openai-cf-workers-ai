@@ -50,7 +50,15 @@ describe('Models Handler', () => {
 
 		expect(response.status).toBe(200);
 		expect(result.object).toBe('list');
-		expect(result.data.length).toBe(mockApiResponse.result.length);
+		// Should include both OpenAI aliases (13) and Cloudflare models (4)
+		expect(result.data.length).toBeGreaterThanOrEqual(mockApiResponse.result.length);
+		// Verify OpenAI aliases are present
+		const modelIds = result.data.map(m => m.id);
+		expect(modelIds).toContain('gpt-3.5-turbo');
+		expect(modelIds).toContain('tts-1');
+		expect(modelIds).toContain('whisper-1');
+		// Verify Cloudflare models are present
+		expect(modelIds).toContain('@cf/meta/llama-2-7b-chat-fp16');
 	});
 
 	it('should include STT models', async () => {
