@@ -1,3 +1,13 @@
-ACCESS_TOKEN=
-CLOUDFLARE_ACCOUNT_ID
-CLOUDFLARE_API_TOKEN=
+# Local Development Environment Variables
+# Copy this file to .dev.vars and fill in your values
+# .dev.vars is automatically loaded by wrangler dev and is gitignored
+
+# Required: Your API access token for authentication
+ACCESS_TOKEN=your-secret-token-here
+
+# Required: Your Cloudflare account ID (for API calls to Cloudflare services)
+CLOUDFLARE_ACCOUNT_ID=your-account-id-here
+
+# Optional: Cloudflare API token (for model updates and management)
+CLOUDFLARE_API_TOKEN=your-api-token-here
+

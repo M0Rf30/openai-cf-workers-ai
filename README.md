@@ -137,29 +137,38 @@ npm install
 
 3. Configure your environment:
 
+**For local development:**
+
 ```bash
-# Copy and edit wrangler.toml with your account details
-cp wrangler.toml.example wrangler.toml
+# Copy the example environment file
+cp .dev.vars.example .dev.vars
+
+# Edit .dev.vars and add your values:
+# - ACCESS_TOKEN: Your API access token for authentication
+# - CLOUDFLARE_ACCOUNT_ID: Your Cloudflare account ID
+# - CLOUDFLARE_API_TOKEN: Your Cloudflare API token (optional, for model updates)
 ```
 
-4. Set your secrets:
+**For production deployment:**
 
 ```bash
+# Set secrets using wrangler (recommended for sensitive data)
 wrangler secret put ACCESS_TOKEN
+wrangler secret put CLOUDFLARE_ACCOUNT_ID
 wrangler secret put CLOUDFLARE_API_TOKEN
+
+# Or set them in the Cloudflare dashboard under Workers > Your Worker > Settings > Variables
 ```
 
-5. Initialize required resources:
+4. Update `wrangler.toml` with your resource IDs:
 
-```bash
-# For development
-npm run init-dev
+- Update KV namespace IDs (if using caching)
+- Update Vectorize index name (if using embeddings/RAG)
+- Update R2 bucket names (if using audio/image storage)
 
-# For production
-npm run init-prod
-```
+> **Note**: Never commit sensitive credentials to `wrangler.toml`. Use `.dev.vars` for local development and `wrangler secret` for production.
 
-6. Deploy to Cloudflare Workers:
+5. Deploy to Cloudflare Workers:
 
 ```bash
 npm run deploy

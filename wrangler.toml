@@ -1,6 +1,8 @@
 name = "ai"
 main = "index.js"
 compatibility_date = "2024-05-06"
+# Account ID should be set via environment variable or wrangler login
+# account_id = "your-account-id"
 
 [ai]
 binding = "AI" # i.e. available in your Worker on env.AI
@@ -37,10 +39,11 @@ preview_id = "your-preview-kv-namespace-id" # Replace with your preview KV names
 binding = "VECTOR_INDEX"
 index_name = "openai-cf-embeddings"
 
+# Environment variables - DO NOT commit sensitive values here
+# For local development: Create a .dev.vars file (see .dev.vars.example)
+# For production: Set via `wrangler secret put <KEY>` or Cloudflare dashboard
 [vars]
-ACCESS_TOKEN = "your-access-token"        # replace with your own.
-CLOUDFLARE_ACCOUNT_ID = "your-account-id" # replace with your own.
-CACHE_TTL_SECONDS = "3600"                # Cache TTL in seconds (1 hour)
+CACHE_TTL_SECONDS = "3600" # Cache TTL in seconds (1 hour)
 # MODEL_MAPPER = { "gpt-3.5-turbo" = "@cf/meta/llama-2-7b-chat-int8" } # Optional
 
 [observability]
